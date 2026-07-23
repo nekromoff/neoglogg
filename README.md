@@ -91,5 +91,5 @@ make
 
 ## Authors and copyright
 
-Copyright (c) 2009–2018 Nicolas Bonnefon
-Copyright (c) 2026+ Daniel Duris, dusoft@staznosti.sk
+- Copyright (c) 2009–2018 Nicolas Bonnefon
+- Copyright (c) 2026+ Daniel Duris, dusoft@staznosti.sk
