@@ -3,6 +3,11 @@ neoglogg - the fast, smart log explorer. updated and upgraded.
 
 neoglogg by Daniel Duris, based on glogg by Nicolas Bonnefon, is a multi-platform GUI application that helps browse and search through long and complex log files.  It is designed with programmers and system administrators in mind and can be seen as a graphical, interactive combination of grep and less.
 
+## You've been warned
+
+This is a partial update. I needed wrap lines features, but then decided to include the older pull requests when possible.
+No mentions in the code have been changed so far. No releases yet, but you can compile. No install/build scripts changed, if they don't work for you, open a pull request. I have tested on Linux only.
+
 ## Main features
 
 * Runs on Unix-like systems, Windows and Mac thanks to Qt
