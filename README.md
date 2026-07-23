@@ -88,3 +88,8 @@ cmake ..
 make
 ./glogg_tests
 ```
+
+## Authors and copyright
+
+Copyright (c) 2009–2018 Nicolas Bonnefon
+Copyright (c) 2026+ Daniel Duris, dusoft@staznosti.sk
