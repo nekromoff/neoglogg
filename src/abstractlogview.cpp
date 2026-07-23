@@ -243,6 +243,11 @@ AbstractLogView::AbstractLogView(const AbstractLogData* newLogData,
     QAbstractScrollArea( parent ),
     followElasticHook_( HOOK_THRESHOLD ),
     lineNumbersVisible_( false ),
+    lineWrap_( false ),
+    wrapRowCounts_(),
+    wrapLayoutFirstLine_( 0 ),
+    firstRowOffset_( 0 ),
+    updatingScrollBar_( false ),
     selectionStartPos_(),
     selectionCurrentEndPos_(),
     autoScrollTimer_(),
@@ -526,6 +531,25 @@ void AbstractLogView::keyPressEvent( QKeyEvent* keyEvent )
         horizontalScrollBar()->triggerAction(QScrollBar::SliderPageStepSub);
     else if ( keyEvent->key() == Qt::Key_Right  && noModifier )
         horizontalScrollBar()->triggerAction(QScrollBar::SliderPageStepAdd);
+    else if ( lineWrap_ && keyEvent->key() == Qt::Key_Up && noModifier )
+        scrollRowsBy( -1 );
+    else if ( lineWrap_ && keyEvent->key() == Qt::Key_Down && noModifier )
+        scrollRowsBy( 1 );
+    else if ( lineWrap_ && keyEvent->key() == Qt::Key_PageUp && noModifier )
+        scrollRowsBy( - ( viewport()->height() / charHeight_ ) );
+    else if ( lineWrap_ && keyEvent->key() == Qt::Key_PageDown && noModifier )
+        scrollRowsBy( viewport()->height() / charHeight_ );
+    else if ( lineWrap_ && keyEvent->key() == Qt::Key_Home && !controlModifier )
+        // Back to the first row of the top line
+        scrollRowsBy( - firstRowOffset_ );
+    else if ( lineWrap_ && keyEvent->key() == Qt::Key_End && !controlModifier ) {
+        // Bring the last row of the top line to the bottom of the view
+        const int viewportRows = viewport()->height() / charHeight_;
+        const int delta =
+            rowsInLineExact( firstLine ) - viewportRows - firstRowOffset_;
+        if ( delta > 0 )
+            scrollRowsBy( delta );
+    }
     else if ( keyEvent->key() == Qt::Key_Home && !controlModifier)
         jumpToStartOfLine();
     else if ( keyEvent->key() == Qt::Key_End  && !controlModifier)
@@ -656,6 +680,25 @@ void AbstractLogView::wheelEvent( QWheelEvent* wheelEvent )
     if ( followMode_ )
         jumpToBottom();
 
+    if ( lineWrap_ ) {
+        // Scroll by visual rows: the scrollbar's whole-line steps are
+        // far too coarse for long wrapped lines. This also bypasses the
+        // elastic 'pull to follow' which would kick in while wrapped
+        // content is still unseen below.
+        auto pixel_delta = wheelEvent->pixelDelta();
+        const int y_delta = pixel_delta.isNull() ?
+            wheelEvent->angleDelta().y() : pixel_delta.y();
+
+        // A wheel notch (120 units) moves 3 rows
+        int nb_rows = - y_delta / 40;
+        if ( ( nb_rows == 0 ) && ( y_delta != 0 ) )
+            nb_rows = ( y_delta > 0 ) ? -1 : 1;
+
+        if ( nb_rows != 0 )
+            scrollRowsBy( nb_rows );
+        return;
+    }
+
     int y_delta = 0;
     if ( verticalScrollBar()->value() == verticalScrollBar()->maximum() ) {
         // First see if we need to block the elastic (on Mac)
@@ -719,6 +762,13 @@ void AbstractLogView::scrollContentsBy( int dx, int dy )
 {
     LOG(logDEBUG) << "scrollContentsBy received " << dy
         << "position " << verticalScrollBar()->value();
+
+    // scrollRowsBy() has already updated the view, don't reset its offset
+    if ( updatingScrollBar_ )
+        return;
+
+    // The scrollbar works in whole lines, restart at the top of the line
+    firstRowOffset_ = 0;
 
     int32_t last_top_line = ( logData->getNbLine() - getNbVisibleLines() );
     if ( ( last_top_line > 0 ) && verticalScrollBar()->value() > last_top_line ) {
@@ -1132,6 +1182,27 @@ void AbstractLogView::setLineNumbersVisible( bool lineNumbersVisible )
     lineNumbersVisible_ = lineNumbersVisible;
 }
 
+void AbstractLogView::setLineWrapEnabled( bool lineWrap )
+{
+    if ( lineWrap_ == lineWrap )
+        return;
+
+    lineWrap_ = lineWrap;
+    firstRowOffset_ = 0;
+
+    // Horizontal scrolling makes no sense when wrapping
+    if ( lineWrap_ ) {
+        firstCol = 0;
+        horizontalScrollBar()->setValue( 0 );
+    }
+
+    updateScrollBars();
+
+    // Our text area cache is now invalid
+    textAreaCache_.invalid_ = true;
+    update();
+}
+
 void AbstractLogView::forceRefresh()
 {
     // Invalidate our cache
@@ -1154,10 +1225,117 @@ int AbstractLogView::getNbVisibleCols() const
     return ( viewport()->width() - leftMarginPx_ ) / charWidth_ + 1;
 }
 
+// Returns the number of visual rows the line uses once wrapped
+// (always 1 if line wrapping is disabled)
+int AbstractLogView::getNbRowsForLine( LineNumber line ) const
+{
+    if ( !lineWrap_ )
+        return 1;
+
+    // Only use the layout cached during the last paint (simple character
+    // counts), never go back to the data layer here: this is called for
+    // every scroll and mouse event and reading lines is far too expensive.
+    const int index = static_cast<int>( line )
+        - static_cast<int>( wrapLayoutFirstLine_ );
+    if ( index >= 0 && index < wrapRowCounts_.size() )
+        return wrapRowCounts_.at( index );
+
+    return 1;
+}
+
+// Like getNbRowsForLine but falls back to reading the (single) line's
+// length when it is not in the cached layout. Only for use in
+// scrollRowsBy, where at most a couple of lines are looked up per call.
+int AbstractLogView::rowsInLineExact( LineNumber line ) const
+{
+    if ( !lineWrap_ )
+        return 1;
+
+    const int index = static_cast<int>( line )
+        - static_cast<int>( wrapLayoutFirstLine_ );
+    if ( index >= 0 && index < wrapRowCounts_.size() )
+        return wrapRowCounts_.at( index );
+
+    const int nbCols = qMax( 1, getNbVisibleCols() );
+    return qMax( 1, ( logData->getLineLength( line ) + nbCols - 1 ) / nbCols );
+}
+
+// Scroll the view by the given number of visual rows (used when line
+// wrapping is on, where the scrollbar's whole-line granularity is too
+// coarse for long wrapped lines).
+void AbstractLogView::scrollRowsBy( int delta )
+{
+    const qint64 nbLinesInFile = logData->getNbLine();
+    if ( nbLinesInFile == 0 )
+        return;
+
+    qint64 line = firstLine;
+    int offset  = firstRowOffset_ + delta;
+
+    // Going up: pull previous lines under the offset
+    while ( ( offset < 0 ) && ( line > 0 ) ) {
+        line--;
+        offset += rowsInLineExact( line );
+    }
+    if ( offset < 0 )
+        offset = 0;
+
+    // Going down: consume rows of the current line
+    while ( line < nbLinesInFile - 1 ) {
+        const int nbRows = rowsInLineExact( line );
+        if ( offset < nbRows )
+            break;
+        offset -= nbRows;
+        line++;
+    }
+    // Keep at least the last row of the last line on screen
+    if ( line >= nbLinesInFile - 1 )
+        offset = qMin( offset,
+                qMax( 0, rowsInLineExact( nbLinesInFile - 1 ) - 1 ) );
+
+    if ( ( line == firstLine ) && ( offset == firstRowOffset_ ) )
+        return;
+
+    firstLine = line;
+    firstRowOffset_ = offset;
+    lastLineAligned = false;
+
+    // Keep the scrollbar (whole-line granularity) roughly in sync,
+    // without letting scrollContentsBy reset our row offset
+    updatingScrollBar_ = true;
+    verticalScrollBar()->setValue( firstLine );
+    updatingScrollBar_ = false;
+
+    if ( overview_ != NULL )
+        overview_->updateCurrentPosition( firstLine,
+                firstLine + getNbVisibleLines() );
+
+    textAreaCache_.invalid_ = true;
+    update();
+}
+
 // Converts the mouse x, y coordinates to the line number in the file
 int AbstractLogView::convertCoordToLine(int yPos) const
 {
-    int line = firstLine + ( yPos - drawingTopOffset_ ) / charHeight_;
+    int row = ( yPos - drawingTopOffset_ ) / charHeight_;
+
+    if ( !lineWrap_ || row < 0 )
+        return firstLine + row;
+
+    // Account for the rows of firstLine hidden above the viewport
+    row += firstRowOffset_;
+
+    // Walk the wrapped lines from the top of the view to find
+    // which one the row falls into
+    const qint64 nbLinesInFile = logData->getNbLine();
+    LineNumber line = firstLine;
+    while ( line < nbLinesInFile ) {
+        const int nbRows = getNbRowsForLine( line );
+        if ( row < nbRows )
+            break;
+        row -= nbRows;
+        line++;
+    }
 
     return line;
 }
@@ -1166,14 +1344,43 @@ int AbstractLogView::convertCoordToLine(int yPos) const
 // This function ensure the pos exists in the file.
 QPoint AbstractLogView::convertCoordToFilePos( const QPoint& pos ) const
 {
-    int line = convertCoordToLine( pos.y() );
+    int line;
+    int column;
+
+    if ( lineWrap_ ) {
+        const int nbCols = qMax( 1, getNbVisibleCols() );
+        int row = ( pos.y() - drawingTopOffset_ ) / charHeight_;
+        if ( row < 0 )
+            row = 0;
+
+        // Account for the rows of firstLine hidden above the viewport
+        row += firstRowOffset_;
+
+        // Find the line the row falls into, keeping track of the
+        // wrapped row inside that line to compute the column
+        const qint64 nbLinesInFile = logData->getNbLine();
+        line = firstLine;
+        while ( line < nbLinesInFile - 1 ) {
+            const int nbRows = getNbRowsForLine( line );
+            if ( row < nbRows )
+                break;
+            row -= nbRows;
+            line++;
+        }
+
+        column = row * nbCols + ( pos.x() - leftMarginPx_ ) / charWidth_;
+    }
+    else {
+        line = convertCoordToLine( pos.y() );
+
+        // Determine column in screen space and convert it to file space
+        column = firstCol + ( pos.x() - leftMarginPx_ ) / charWidth_;
+    }
+
     if ( line >= logData->getNbLine() )
         line = logData->getNbLine() - 1;
     if ( line < 0 )
         line = 0;
-
-    // Determine column in screen space and convert it to file space
-    int column = firstCol + ( pos.x() - leftMarginPx_ ) / charWidth_;
 
     QString this_line = logData->getExpandedLineString( line );
     const int length = this_line.length();
@@ -1412,7 +1619,8 @@ void AbstractLogView::updateScrollBars()
     verticalScrollBar()->setRange( 0, std::max( 0LL,
             logData->getNbLine() - getNbVisibleLines() + 1 ) );
 
-    const int hScrollMaxValue = std::max( 0,
+    // No horizontal scrolling when lines are wrapped
+    const int hScrollMaxValue = lineWrap_ ? 0 : std::max( 0,
             logData->getMaxLength() - getNbVisibleCols() + 1 );
     horizontalScrollBar()->setRange( 0, hScrollMaxValue );
 }
@@ -1455,17 +1663,47 @@ void AbstractLogView::drawTextArea( QPaintDevice* paint_device, int32_t )
     if ( firstLine > lines_in_file )
         firstLine = lines_in_file ? lines_in_file - 1 : 0;
 
-    const int64_t nbLines = std::min(
+    const int64_t maxNbLines = std::min(
             static_cast<int64_t>( getNbVisibleLines() ), lines_in_file - firstLine );
 
-    const int bottomOfTextPx = nbLines * fontHeight;
-
-    LOG(logDEBUG) << "drawing lines from " << firstLine << " (" << nbLines << " lines)";
-    LOG(logDEBUG) << "bottomOfTextPx: " << bottomOfTextPx;
+    LOG(logDEBUG) << "drawing lines from " << firstLine;
     LOG(logDEBUG) << "Height: " << paintDeviceHeight;
 
-    // Lines to write
-    const QStringList lines = logData->getExpandedLines( firstLine, nbLines );
+    // Lines to write. When wrapping, only fetch as many lines as are
+    // needed to fill the screen once wrapped (a single long line can
+    // cover the whole viewport), and cache the layout (simple character
+    // splitting) so scroll and mouse handling can do pure arithmetic
+    // instead of re-reading lines.
+    const int nbColsPerRow = qMax( 1, nbCols );
+    QStringList lines;
+    if ( lineWrap_ ) {
+        const int rowsNeeded =
+            static_cast<int>( getNbVisibleLines() ) + firstRowOffset_;
+        int rowsFetched = 0;
+
+        wrapLayoutFirstLine_ = firstLine;
+        wrapRowCounts_.clear();
+
+        while ( ( rowsFetched < rowsNeeded )
+                && ( lines.count() < maxNbLines ) ) {
+            const int chunk = static_cast<int>( std::min(
+                    static_cast<int64_t>( 8 ), maxNbLines - lines.count() ) );
+            const QStringList chunkLines = logData->getExpandedLines(
+                    firstLine + lines.count(), chunk );
+            foreach ( const QString& l, chunkLines ) {
+                const int nbRows =
+                    qMax( 1, ( l.length() + nbColsPerRow - 1 ) / nbColsPerRow );
+                wrapRowCounts_.append( nbRows );
+                rowsFetched += nbRows;
+            }
+            lines << chunkLines;
+        }
+    }
+    else {
+        lines = logData->getExpandedLines( firstLine, maxNbLines );
+    }
+
+    const int64_t nbLines = lines.count();
 
     // First draw the bullet left margin
     painter.setPen(palette.color(QPalette::Text));
@@ -1519,16 +1757,24 @@ void AbstractLogView::drawTextArea( QPaintDevice* paint_device, int32_t )
     leftMarginPx_ = contentStartPosX + SEPARATOR_WIDTH;
 
     // Then draw each line
+    int currentRow = 0;      // Visual row at which the next line is drawn
     for (int i = 0; i < nbLines; i++) {
+        // Stop once the paint device is full (with wrapping, lines
+        // can use several rows each)
+        if ( currentRow * fontHeight >= paintDeviceHeight )
+            break;
+
         const LineNumber line_index = i + firstLine;
 
-        // Position in pixel of the base line of the line to print
-        const int yPos = i * fontHeight;
+        // Position in pixel of the base line of the (first row of the) line
+        const int yPos = currentRow * fontHeight;
         const int xPos = contentStartPosX + CONTENT_MARGIN_WIDTH;
 
         // string to print, cut to fit the length and position of the view
         const QString line = lines[i];
-        const QString cutLine = line.mid( firstCol, nbCols );
+
+        // Number of visual rows the line takes once wrapped
+        const int nbRowsForLine = lineWrap_ ? wrapRowCounts_.at( i ) : 1;
 
         if ( selection_.isLineSelected( line_index ) ) {
             // Reverse the selected line
@@ -1555,79 +1801,95 @@ void AbstractLogView::drawTextArea( QPaintDevice* paint_device, int32_t )
         bool isMatch =
             quickFindPattern_->matchLine( line, qfMatchList );
 
-        if ( isSelection || isMatch ) {
-            // We use the LineDrawer and its chunks because the
-            // line has to be somehow highlighted
-            LineDrawer lineDrawer( backColor );
+        // Draw each visual row of the line (only one if wrapping is off),
+        // the first line may start part-way through if the view is
+        // scrolled inside a wrapped line
+        const int startRow = ( lineWrap_ && ( i == 0 ) ) ?
+            qMin( firstRowOffset_, nbRowsForLine - 1 ) : 0;
+        for ( int row = startRow; row < nbRowsForLine; row++, currentRow++ ) {
+            const int rowYPos = currentRow * fontHeight;
+            if ( rowYPos >= paintDeviceHeight )
+                break;
 
-            // First we create a list of chunks with the highlights
-            QList<LineChunk> chunkList;
-            int column = 0; // Current column in line space
-            foreach( const QuickFindMatch match, qfMatchList ) {
-                int start = match.startColumn() - firstCol;
-                int end = start + match.length();
-                // Ignore matches that are *completely* outside view area
-                if ( ( start < 0 && end < 0 ) || start >= nbCols )
-                    continue;
-                if ( start > column )
-                    chunkList << LineChunk( column, start - 1, LineChunk::Normal );
-                column = qMin( start + match.length() - 1, nbCols );
-                chunkList << LineChunk( qMax( start, 0 ), column,
-                        LineChunk::Highlighted );
-                column++;
-            }
-            if ( column <= cutLine.length() - 1 )
-                chunkList << LineChunk( column, cutLine.length() - 1, LineChunk::Normal );
+            // First column of the line shown on this row
+            const int rowFirstCol = lineWrap_ ? row * nbColsPerRow : firstCol;
+            const QString cutLine = line.mid( rowFirstCol, nbCols );
 
-            // Then we add the selection if needed
-            QList<LineChunk> newChunkList;
-            if ( isSelection ) {
-                sel_start -= firstCol; // coord in line space
-                sel_end   -= firstCol;
+            if ( isSelection || isMatch ) {
+                // We use the LineDrawer and its chunks because the
+                // line has to be somehow highlighted
+                LineDrawer lineDrawer( backColor );
 
-                foreach ( const LineChunk chunk, chunkList ) {
-                    newChunkList << chunk.select( sel_start, sel_end );
+                // First we create a list of chunks with the highlights
+                QList<LineChunk> chunkList;
+                int column = 0; // Current column in line space
+                foreach( const QuickFindMatch match, qfMatchList ) {
+                    int start = match.startColumn() - rowFirstCol;
+                    int end = start + match.length();
+                    // Ignore matches that are *completely* outside view area
+                    if ( ( start < 0 && end < 0 ) || start >= nbCols )
+                        continue;
+                    if ( start > column )
+                        chunkList << LineChunk( column, start - 1, LineChunk::Normal );
+                    column = qMin( start + match.length() - 1, nbCols );
+                    chunkList << LineChunk( qMax( start, 0 ), column,
+                            LineChunk::Highlighted );
+                    column++;
                 }
-            }
-            else
-                newChunkList = chunkList;
+                if ( column <= cutLine.length() - 1 )
+                    chunkList << LineChunk( column, cutLine.length() - 1, LineChunk::Normal );
 
-            foreach ( const LineChunk chunk, newChunkList ) {
-                // Select the colours
-                QColor fore;
-                QColor back;
-                switch ( chunk.type() ) {
-                    case LineChunk::Normal:
-                        fore = foreColor;
-                        back = backColor;
-                        break;
-                    case LineChunk::Highlighted:
-                        fore = QColor( "black" );
-                        back = QColor( "yellow" );
-                        // fore = highlightForeColor;
-                        // back = highlightBackColor;
-                        break;
-                    case LineChunk::Selected:
-                        fore = palette.color( QPalette::HighlightedText ),
-                             back = palette.color( QPalette::Highlight );
-                        break;
+                // Then we add the selection if needed
+                QList<LineChunk> newChunkList;
+                if ( isSelection ) {
+                    // coord in line space
+                    const int rowSelStart = sel_start - rowFirstCol;
+                    const int rowSelEnd   = sel_end - rowFirstCol;
+
+                    foreach ( const LineChunk chunk, chunkList ) {
+                        newChunkList << chunk.select( rowSelStart, rowSelEnd );
+                    }
                 }
-                lineDrawer.addChunk ( chunk, fore, back );
-            }
+                else
+                    newChunkList = chunkList;
 
-            lineDrawer.draw( painter, xPos, yPos,
-                    viewport()->width(), cutLine,
-                    CONTENT_MARGIN_WIDTH );
-        }
-        else {
-            // Nothing to be highlighted, we print the whole line!
-            painter.fillRect( xPos - CONTENT_MARGIN_WIDTH, yPos,
-                    viewport()->width(), fontHeight, backColor );
-            // (the rectangle is extended on the left to cover the small
-            // margin, it looks better (LineDrawer does the same) )
-            painter.setPen( foreColor );
-            painter.drawText( xPos, yPos + fontAscent, cutLine );
-        }
+                foreach ( const LineChunk chunk, newChunkList ) {
+                    // Select the colours
+                    QColor fore;
+                    QColor back;
+                    switch ( chunk.type() ) {
+                        case LineChunk::Normal:
+                            fore = foreColor;
+                            back = backColor;
+                            break;
+                        case LineChunk::Highlighted:
+                            fore = QColor( "black" );
+                            back = QColor( "yellow" );
+                            // fore = highlightForeColor;
+                            // back = highlightBackColor;
+                            break;
+                        case LineChunk::Selected:
+                            fore = palette.color( QPalette::HighlightedText ),
+                                 back = palette.color( QPalette::Highlight );
+                            break;
+                    }
+                    lineDrawer.addChunk ( chunk, fore, back );
+                }
+
+                lineDrawer.draw( painter, xPos, rowYPos,
+                        viewport()->width(), cutLine,
+                        CONTENT_MARGIN_WIDTH );
+            }
+            else {
+                // Nothing to be highlighted, we print the whole line!
+                painter.fillRect( xPos - CONTENT_MARGIN_WIDTH, rowYPos,
+                        viewport()->width(), fontHeight, backColor );
+                // (the rectangle is extended on the left to cover the small
+                // margin, it looks better (LineDrawer does the same) )
+                painter.setPen( foreColor );
+                painter.drawText( xPos, rowYPos + fontAscent, cutLine );
+            }
+        } // For each row of the line
 
         // Then draw the bullet
         painter.setPen( palette.color( QPalette::Text ) );
@@ -1676,6 +1938,8 @@ void AbstractLogView::drawTextArea( QPaintDevice* paint_device, int32_t )
                     yPos + fontAscent, lineNumberStr );
         }
     } // For each line
+
+    const int bottomOfTextPx = currentRow * fontHeight;
 
     if ( bottomOfTextPx < paintDeviceHeight ) {
         // The lines don't cover the whole device

@@ -45,6 +45,7 @@ Configuration::Configuration()
     overviewVisible_              = true;
     lineNumbersVisibleInMain_     = false;
     lineNumbersVisibleInFiltered_ = true;
+    lineWrap_                     = false;
 
     QFontInfo fi(mainFont_);
     LOG(logDEBUG) << "Default font is " << fi.family().toStdString();
@@ -104,6 +105,8 @@ void Configuration::retrieveFromStorage( QSettings& settings )
     if ( settings.contains( "view.lineNumbersVisibleInFiltered" ) )
         lineNumbersVisibleInFiltered_ =
             settings.value( "view.lineNumbersVisibleInFiltered" ).toBool();
+    if ( settings.contains( "view.lineWrap" ) )
+        lineWrap_ = settings.value( "view.lineWrap" ).toBool();
 
     // Some sanity check (mainly for people upgrading)
     if ( quickfindIncremental_ )
@@ -134,6 +137,7 @@ void Configuration::saveToStorage( QSettings& settings ) const
     settings.setValue( "view.overviewVisible", overviewVisible_ );
     settings.setValue( "view.lineNumbersVisibleInMain", lineNumbersVisibleInMain_ );
     settings.setValue( "view.lineNumbersVisibleInFiltered", lineNumbersVisibleInFiltered_ );
+    settings.setValue( "view.lineWrap", lineWrap_ );
     settings.setValue( "defaultView.searchAutoRefresh", searchAutoRefresh_ );
     settings.setValue( "defaultView.searchIgnoreCase", searchIgnoreCase_ );
 }

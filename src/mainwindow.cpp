@@ -314,6 +314,12 @@ void MainWindow::createActions()
     connect( lineNumbersVisibleInFilteredAction, SIGNAL( toggled( bool ) ),
             this, SLOT( toggleFilteredLineNumbersVisibility( bool )) );
 
+    lineWrapAction = new QAction( tr("Line &wrapping"), this );
+    lineWrapAction->setCheckable( true );
+    lineWrapAction->setChecked( config->isLineWrapEnabled() );
+    connect( lineWrapAction, SIGNAL( toggled( bool ) ),
+            this, SLOT( toggleLineWrap( bool )) );
+
     followAction = new QAction( tr("&Follow File"), this );
     followAction->setShortcut(Qt::Key_F);
     followAction->setCheckable(true);
@@ -387,6 +393,8 @@ void MainWindow::createMenus()
     viewMenu->addSeparator();
     viewMenu->addAction( lineNumbersVisibleInMainAction );
     viewMenu->addAction( lineNumbersVisibleInFilteredAction );
+    viewMenu->addSeparator();
+    viewMenu->addAction( lineWrapAction );
     viewMenu->addSeparator();
     viewMenu->addAction( followAction );
     viewMenu->addSeparator();
@@ -583,6 +591,14 @@ void MainWindow::toggleFilteredLineNumbersVisibility( bool isVisible )
     std::shared_ptr<Configuration> config =
         Persistent<Configuration>( "settings" );
     config->setFilteredLineNumbersVisible( isVisible );
+    emit optionsChanged();
+}
+
+void MainWindow::toggleLineWrap( bool isEnabled )
+{
+    std::shared_ptr<Configuration> config =
+        Persistent<Configuration>( "settings" );
+    config->setLineWrapEnabled( isEnabled );
     emit optionsChanged();
 }
 

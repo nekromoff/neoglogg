@@ -89,6 +89,7 @@ class MainWindow : public QMainWindow
     // Change the view settings
     void toggleOverviewVisibility( bool isVisible );
     void toggleMainLineNumbersVisibility( bool isVisible );
+    void toggleLineWrap( bool isEnabled );
     void toggleFilteredLineNumbersVisibility( bool isVisible );
 
     // Change the follow mode checkbox and send the followSet signal down
@@ -193,6 +194,7 @@ class MainWindow : public QMainWindow
     QAction *overviewVisibleAction;
     QAction *lineNumbersVisibleInMainAction;
     QAction *lineNumbersVisibleInFilteredAction;
+    QAction *lineWrapAction;
     QAction *followAction;
     QAction *reloadAction;
     QAction *stopAction;

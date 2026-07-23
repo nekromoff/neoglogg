@@ -272,6 +272,9 @@ class AbstractLogView :
     // Configure the setting of whether to show line number margin
     void setLineNumbersVisible( bool lineNumbersVisible );
 
+    // Configure the setting of whether to wrap long lines
+    void setLineWrapEnabled( bool lineWrap );
+
     // Force the next refresh to fully redraw the view by invalidating the cache.
     // To be used if the data might have changed.
     void forceRefresh();
@@ -306,6 +309,26 @@ class AbstractLogView :
 
     // Whether to show line numbers or not
     bool lineNumbersVisible_;
+
+    // Whether to wrap long lines rather than scrolling horizontally
+    bool lineWrap_;
+
+    // Cached wrap layout of the lines fetched for the last paint:
+    // number of visual rows for each line starting at wrapLayoutFirstLine_.
+    // Filled by drawTextArea with simple character counts so that
+    // coordinate conversions never have to go back to the (expensive)
+    // data layer.
+    QVector<int> wrapRowCounts_;
+    LineNumber wrapLayoutFirstLine_;
+
+    // Number of wrapped rows of firstLine hidden above the viewport,
+    // allows scrolling within a long wrapped line (always 0 if
+    // wrapping is off)
+    int firstRowOffset_;
+
+    // Guard to avoid scrollContentsBy resetting firstRowOffset_ when
+    // we update the scrollbar ourselves from scrollRowsBy()
+    bool updatingScrollBar_;
 
     // Pointer to the CrawlerWidget's data set
     const AbstractLogData* logData;
@@ -384,6 +407,9 @@ class AbstractLogView :
 
     LineNumber getNbVisibleLines() const;
     int getNbVisibleCols() const;
+    int getNbRowsForLine( LineNumber line ) const;
+    int rowsInLineExact( LineNumber line ) const;
+    void scrollRowsBy( int delta );
     QPoint convertCoordToFilePos( const QPoint& pos ) const;
     int convertCoordToLine( int yPos ) const;
     int convertCoordToColumn( int xPos ) const;

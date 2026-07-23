@@ -82,6 +82,10 @@ class Configuration : public Persistable {
     { lineNumbersVisibleInMain_ = lineNumbersVisible; }
     void setFilteredLineNumbersVisible( bool lineNumbersVisible )
     { lineNumbersVisibleInFiltered_ = lineNumbersVisible; }
+    bool isLineWrapEnabled() const
+    { return lineWrap_; }
+    void setLineWrapEnabled( bool lineWrap )
+    { lineWrap_ = lineWrap; }
 
     // Default settings for new views
     bool isSearchAutoRefreshDefault() const
@@ -111,6 +115,7 @@ class Configuration : public Persistable {
     bool overviewVisible_;
     bool lineNumbersVisibleInMain_;
     bool lineNumbersVisibleInFiltered_;
+    bool lineWrap_;
 
     // Default settings for new views
     bool searchAutoRefresh_;

@@ -424,6 +424,9 @@ void CrawlerWidget::applyConfiguration()
     logMainView->setLineNumbersVisible( config->mainLineNumbersVisible() );
     filteredView->setLineNumbersVisible( config->filteredLineNumbersVisible() );
 
+    logMainView->setLineWrapEnabled( config->isLineWrapEnabled() );
+    filteredView->setLineWrapEnabled( config->isLineWrapEnabled() );
+
     overview_.setVisible( config->isOverviewVisible() );
     logMainView->refreshOverview();
 
