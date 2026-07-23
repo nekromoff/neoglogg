@@ -5,8 +5,7 @@ neoglogg by Daniel Duris, based on glogg by Nicolas Bonnefon, is a multi-platfor
 
 ## You've been warned
 
-This is a partial update. I needed wrap lines features, but then decided to include the older pull requests when possible.
-No mentions in the code have been changed so far. No releases yet, but you can compile. No install/build scripts changed, if they don't work for you, open a pull request. I have tested on Linux only.
+This is a partial update. I needed wrap lines features, but then decided to include the older pull requests when possible. No releases yet, but you can compile. Install and build scripts have been updated. If they don't work for you, open a pull request. I have tested on Linux only.
 
 ## Main features
 
