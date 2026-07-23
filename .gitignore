@@ -33,6 +33,7 @@ glogg_resource.rc
 
 # Tests
 tests/build/
+build/
 
 # Qt-specific
 /.moc
