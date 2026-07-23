@@ -13,7 +13,7 @@
 
 static const qint64 VBL_NB_LINES = 4999999LL;
 static const int VBL_LINE_PER_PAGE = 70;
-static const char* vbl_format="LOGDATA is a part of glogg, we are going to test it thoroughly, this is line\t\t%07d\n";
+static const char* vbl_format="LOGDATA is a part of neoglogg, we are going to test it thoroughly, this is line\t\t%07d\n";
 static const int VBL_LINE_LENGTH = (76+2+7) ; // Without the final '\n' !
 static const int VBL_VISIBLE_LINE_LENGTH = (76+8+4+7); // Without the final '\n' !
 
@@ -70,7 +70,7 @@ class PerfLogFilteredData : public testing::Test {
 TEST_F( PerfLogFilteredData, allMatchingSearch ) {
     {
         TestTimer t;
-        filtered_data_->runSearch( QRegularExpression( "glogg.*this" ) );
+        filtered_data_->runSearch( QRegularExpression( "neoglogg.*this" ) );
         search();
     }
     ASSERT_THAT( filtered_data_->getNbLine(), VBL_NB_LINES );

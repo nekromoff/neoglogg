@@ -37,17 +37,31 @@ Merged from upstream glogg pull requests:
 
 ## Download
 
-Installers, binaries and source tarballs are available at https://glogg.bonnefon.org/download.html.
+Installers, binaries and source tarballs are not available yet.
 
 ## Requirements
 
-* GCC version 4.8.0 or later
-* Qt libraries (version 5.2.0 or later)
+* GCC version 4.8.0 or later (any C++11 compiler should do)
+* Qt libraries, version 5.2.0 or later (Qt 5 only — Qt 4 and Qt 6 are not supported)
 * Boost "program-options" development libraries
 * Markdown HTML processor (optional, to generate HTML documentation)
 
-glogg version 0.9.X still support older versions of gcc and Qt if you need to
-build on an older platform.
+* **Linux (Debian/Ubuntu):** `qtbase5-dev`, `qt5-qmake`, `qtbase5-dev-tools`,
+  `libboost-program-options-dev`; optionally `markdown` for the HTML docs.
+  D-Bus support (single-instance mode) only needs Qt5 DBus, included in qtbase.
+* **Windows (native MinGW):** Qt 5.x for MinGW and Boost, built as in
+  `appveyor.yml` (tested with Qt 5.10.1/mingw53_32 and Boost 1.67):
+  `qmake -r BOOST_PATH=%BOOST_ROOT%` then `mingw32-make`. NSIS (plus the
+  `neoglogg.nsi` script) is only needed to produce the installer.
+  Note: `INSTALL.win.md` and `release-win32-x.sh` describe the legacy Qt4-era
+  Linux cross-build and have not been updated or tested — prefer the native
+  MinGW build.
+* **macOS:** static Qt 5.8+ build and Boost 1.59+ (see `release-osx.sh` for
+  the expected paths); `node`/`appdmg` (via Homebrew and npm) only for
+  packaging the DMG installer.
+* **Tests:** CMake, Qt5 and the Google Mock sources (`GMOCK_HOME`), see below.
+
+neoglogg has been developed and tested on Linux only so far.
 
 ## Building
 
@@ -57,7 +71,7 @@ recommended:
 ```
 mkdir -p build
 cd build
-qmake ../glogg.pro
+qmake ../neoglogg.pro
 make
 make install INSTALL_ROOT=/usr/local (as root if needed)
 ```
@@ -76,7 +90,8 @@ is found.
 
 ## Tests
 
-The tests are built using CMake, and require Qt5 and the Google Mocks source.
+The tests are built using CMake, and require Qt5 (5.8 or later for the test
+suite) and the Google Mock source (pointed to by `GMOCK_HOME`).
 
 ```
 cd tests
@@ -86,7 +101,7 @@ export QT_DIR=/path/to/qt/if/non/standard
 export GMOCK_HOME=/path/to/gmock
 cmake ..
 make
-./glogg_tests
+./neoglogg_tests
 ```
 
 ## Authors and copyright

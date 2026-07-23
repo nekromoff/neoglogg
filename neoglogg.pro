@@ -1,11 +1,11 @@
 # -------------------------------------------------
-# glogg
+# neoglogg
 # -------------------------------------------------
 
 # Debug builds: qmake CONFIG+=debug
 # Release builds: qmake
 
-TARGET = glogg
+TARGET = neoglogg
 TEMPLATE = app
 
 QT += network
@@ -54,7 +54,7 @@ SOURCES += \
     src/tabbedcrawlerwidget.cpp \
     src/viewtools.cpp \
     src/encodingspeculator.cpp \
-    src/gloggapp.cpp \
+    src/neogloggapp.cpp \
 
 INCLUDEPATH += src/
 
@@ -102,7 +102,7 @@ HEADERS += \
     src/externalcom.h \
     src/viewtools.h \
     src/encodingspeculator.h \
-    src/gloggapp.h \
+    src/neogloggapp.h \
 
 isEmpty(BOOST_PATH) {
     message(Building using system dynamic Boost libraries)
@@ -137,16 +137,16 @@ FORMS += src/filtersdialog.ui
 
 macx {
     # Icon for Mac
-    ICON = images/glogg.icns
+    ICON = images/neoglogg.icns
 }
 else {
     # For Windows icon
-    RC_ICONS = glogg48.ico
+    RC_ICONS = neoglogg48.ico
     QMAKE_TARGET_COMPANY = "Nicolas Bonnefon"
-    QMAKE_TARGET_DESCRIPTION = "glogg - the fast, smart log explorer"
+    QMAKE_TARGET_DESCRIPTION = "neoglogg - the fast, smart log explorer"
 }
 
-RESOURCES = glogg.qrc
+RESOURCES = neoglogg.qrc
 
 # Build HTML documentation (if 'markdown' is available)
 system(type markdown >/dev/null) {
@@ -169,19 +169,19 @@ QMAKE_EXTRA_COMPILERS += doc_processor
 
 # Install (for unix)
 icon16.path  = $$PREFIX/share/icons/hicolor/16x16/apps
-icon16.files = images/hicolor/16x16/glogg.png
+icon16.files = images/hicolor/16x16/neoglogg.png
 
 icon32.path  = $$PREFIX/share/icons/hicolor/32x32/apps
-icon32.files = images/hicolor/32x32/glogg.png
+icon32.files = images/hicolor/32x32/neoglogg.png
 
 icon_svg.path  = $$PREFIX/share/icons/hicolor/scalable/apps
-icon_svg.files = images/hicolor/scalable/glogg.svg
+icon_svg.files = images/hicolor/scalable/neoglogg.svg
 
-doc.path  = $$PREFIX/share/doc/glogg
+doc.path  = $$PREFIX/share/doc/neoglogg
 doc.files += README.md COPYING
 
 desktop.path = $$PREFIX/share/applications
-desktop.files = glogg.desktop
+desktop.files = neoglogg.desktop
 
 target.path = $$PREFIX/bin
 INSTALLS = target icon16 icon32 icon_svg doc desktop
@@ -235,23 +235,23 @@ macx {
 # Official builds can be generated with `qmake VERSION="1.2.3"'
 isEmpty(VERSION):system(date >/dev/null) {
     system([ -f .tarball-version ]) {
-        QMAKE_CXXFLAGS += -DGLOGG_VERSION=\\\"`cat .tarball-version`\\\"
+        QMAKE_CXXFLAGS += -DNEOGLOGG_VERSION=\\\"`cat .tarball-version`\\\"
     }
     else {
-        QMAKE_CXXFLAGS += -DGLOGG_DATE=\\\"`date +'\"%F\"'`\\\"
-        QMAKE_CXXFLAGS += -DGLOGG_VERSION=\\\"`git describe`\\\"
-        QMAKE_CXXFLAGS += -DGLOGG_COMMIT=\\\"`git rev-parse --short HEAD`\\\"
+        QMAKE_CXXFLAGS += -DNEOGLOGG_DATE=\\\"`date +'\"%F\"'`\\\"
+        QMAKE_CXXFLAGS += -DNEOGLOGG_VERSION=\\\"`git describe`\\\"
+        QMAKE_CXXFLAGS += -DNEOGLOGG_COMMIT=\\\"`git rev-parse --short HEAD`\\\"
     }
 }
 else {
-    QMAKE_CXXFLAGS += -DGLOGG_VERSION=\\\"$$VERSION\\\"
+    QMAKE_CXXFLAGS += -DNEOGLOGG_VERSION=\\\"$$VERSION\\\"
 }
 
 # Optional features (e.g. CONFIG+=no-dbus)
 system(pkg-config --exists Qt5DBus):!no-dbus {
     message("Support for D-BUS will be included")
     QT += dbus
-    QMAKE_CXXFLAGS += -DGLOGG_SUPPORTS_DBUS
+    QMAKE_CXXFLAGS += -DNEOGLOGG_SUPPORTS_DBUS
     SOURCES += src/dbusexternalcom.cpp
     HEADERS += src/dbusexternalcom.h
 }
@@ -259,7 +259,7 @@ else {
     message("Support for D-BUS will NOT be included")
     win32 | macx {
         message("Support for cross-platform IPC will be included")
-        QMAKE_CXXFLAGS += -DGLOGG_SUPPORTS_SOCKETIPC
+        QMAKE_CXXFLAGS += -DNEOGLOGG_SUPPORTS_SOCKETIPC
         SOURCES += src/socketexternalcom.cpp
         HEADERS += src/socketexternalcom.h
     }
@@ -269,7 +269,7 @@ else {
 version_checker {
     message("Version checker will be included")
     QT += network
-    QMAKE_CXXFLAGS += -DGLOGG_SUPPORTS_VERSION_CHECKING
+    QMAKE_CXXFLAGS += -DNEOGLOGG_SUPPORTS_VERSION_CHECKING
     SOURCES += src/versionchecker.cpp
     HEADERS += src/versionchecker.h
 }
@@ -290,19 +290,19 @@ win32 {
     message("File watching using Windows")
     SOURCES += src/platformfilewatcher.cpp src/winwatchtowerdriver.cpp src/watchtower.cpp src/watchtowerlist.cpp
     HEADERS += src/platformfilewatcher.h src/winwatchtowerdriver.h src/watchtower.h src/watchtowerlist.h
-    QMAKE_CXXFLAGS += -DGLOGG_SUPPORTS_POLLING
+    QMAKE_CXXFLAGS += -DNEOGLOGG_SUPPORTS_POLLING
 }
 else {
     inotify {
         message("File watching using inotify")
-        QMAKE_CXXFLAGS += -DGLOGG_SUPPORTS_INOTIFY
+        QMAKE_CXXFLAGS += -DNEOGLOGG_SUPPORTS_INOTIFY
         SOURCES += src/platformfilewatcher.cpp src/inotifywatchtowerdriver.cpp src/watchtower.cpp src/watchtowerlist.cpp
         HEADERS += src/platformfilewatcher.h src/inotifywatchtowerdriver.h src/watchtower.h src/watchtowerlist.h
     }
     else {
         macx {
             message("File watching using kqueue")
-            QMAKE_CXXFLAGS += -DGLOGG_SUPPORTS_KQUEUE
+            QMAKE_CXXFLAGS += -DNEOGLOGG_SUPPORTS_KQUEUE
             SOURCES += src/platformfilewatcher.cpp src/kqueuewatchtowerdriver.cpp src/watchtower.cpp src/watchtowerlist.cpp
             HEADERS += src/platformfilewatcher.h src/kqueuewatchtowerdriver.h src/watchtower.h src/watchtowerlist.h
         }
@@ -316,5 +316,5 @@ else {
 
 # Performance measurement
 perf {
-    QMAKE_CXXFLAGS += -DGLOGG_PERF_MEASURE_FPS
+    QMAKE_CXXFLAGS += -DNEOGLOGG_PERF_MEASURE_FPS
 }

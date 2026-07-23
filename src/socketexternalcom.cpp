@@ -11,7 +11,7 @@
 
 #include "log.h"
 
-static const char* GLOG_SERVICE_NAME = "org.bonnefon.glogg";
+static const char* GLOG_SERVICE_NAME = "org.bonnefon.neoglogg";
 
 #ifdef Q_OS_UNIX
 QSharedMemory* g_staticSharedMemory = nullptr;
@@ -118,7 +118,7 @@ ExternalInstance* SocketExternalCommunicator::otherInstance() const
         return static_cast<ExternalInstance*>( new SocketExternalInstance() );
     }
     catch ( CantCreateExternalErr ) {
-        LOG(logINFO) << "Cannot find external correspondant, we are the only glogg out there.";
+        LOG(logINFO) << "Cannot find external correspondant, we are the only neoglogg out there.";
         return nullptr;
     }
 }

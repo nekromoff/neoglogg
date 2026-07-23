@@ -1,8 +1,15 @@
-# Building glogg for Windows
+# Building neoglogg for Windows
 
-As often on Windows, building _glogg_ is more complicated than we would like.
+**OUTDATED:** this document (and `release-win32-x.sh`) describes the legacy
+Qt 4.8 / MinGW 4.6 cross-build used by upstream glogg and has not been updated
+for neoglogg, which requires Qt 5. For a working Windows build, follow the
+native MinGW recipe in `appveyor.yml` (tested with Qt 5.10.1/mingw53_32 and
+Boost 1.67): set up Qt for MinGW and Boost, then
+`qmake -r BOOST_PATH=<boost dir>` and `mingw32-make`.
+
+As often on Windows, building _neoglogg_ is more complicated than we would like.
 The method we use to test and generate the builds available on
-glogg.bonnefon.org is to cross-build _glogg_ from a Debian/Ubuntu machine.
+glogg.bonnefon.org is to cross-build _neoglogg_ from a Debian/Ubuntu machine.
 
 The compiler currently used is MinGW-W64 4.6.3, which is available on Debian unstable and Ubuntu 12.04 LTS:
 
@@ -19,7 +26,7 @@ Once the dependencies are installed (see below), a script takes care of the buil
 ## Building Qt on Windows
 
 It is allegedly possible to cross-compile Qt from Windows but after a lot of
-frustration, the _glogg_ team is building it natively on Windows (using a
+frustration, the _neoglogg_ team is building it natively on Windows (using a
 Windows 7 64bit VM in VirtualBox) and then using the binary generated from the
 Linux machine.  Amazingly, it works as long as we are using a similar version
 of gcc (MinGW-W64) on both machines.
@@ -32,7 +39,7 @@ Here are instructions to do the build in a Windows 7 VM:
  - Install mingw-w64 from TDM-GCC (tdm64-gcc, tested with 4.6.1).
  - Extract the Qt source in c:\qt\4.8.2
 
-If building a 32 bits version of Qt (what we do for _glogg_):
+If building a 32 bits version of Qt (what we do for _neoglogg_):
 
  - Modify qt/4.8.2/mkspecs/win32-g++/qmake.conf to add `-m32` to `QMAKE_CFLAGS` and `QMAKE_LFLAGS`
  - Modify qt/4.8.2/mkspecs/win32-g++/qmake.conf to replace: `QMAKE_RC = windres -F pe-i386`
@@ -108,13 +115,13 @@ And from the MinGW prompt:
 
 ## (optional) Install NSIS
 
-If _wine_ and the NSIS compiler (available from [here](http://nsis.sourceforge.net/Main_Page)) are available, the script will generate the installer for _glogg_.
+If _wine_ and the NSIS compiler (available from [here](http://nsis.sourceforge.net/Main_Page)) are available, the script will generate the installer for _neoglogg_.
 
 The NSIS compiler should be installed in `~/qt-x-win32/NSIS`.
 
-## Building _glogg_
+## Building _neoglogg_
 
-From this point, building _glogg_ is hopefully straightforward:
+From this point, building _neoglogg_ is hopefully straightforward:
 
     ./release-win32-x.sh
 

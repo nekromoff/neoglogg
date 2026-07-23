@@ -1,20 +1,20 @@
 /*
  * Copyright (C) 2009, 2010, 2013, 2014, 2015 Nicolas Bonnefon and other contributors
  *
- * This file is part of glogg.
+ * This file is part of neoglogg.
  *
- * glogg is free software: you can redistribute it and/or modify
+ * neoglogg is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * glogg is distributed in the hope that it will be useful,
+ * neoglogg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with glogg.  If not, see <http://www.gnu.org/licenses/>.
+ * along with neoglogg.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 // This file implements LogData, the content of a log file.
@@ -29,7 +29,7 @@
 
 #include "logdata.h"
 #include "logfiltereddata.h"
-#if defined(GLOGG_SUPPORTS_INOTIFY) || defined(GLOGG_SUPPORTS_KQUEUE) || defined(WIN32)
+#if defined(NEOGLOGG_SUPPORTS_INOTIFY) || defined(NEOGLOGG_SUPPORTS_KQUEUE) || defined(WIN32)
 #include "platformfilewatcher.h"
 #else
 #include "qtfilewatcher.h"
@@ -72,7 +72,7 @@ LogData::LogData() : AbstractLogData(), indexing_data_(),
 
     codec_ = QTextCodec::codecForName( "ISO-8859-1" );
 
-#if defined(GLOGG_SUPPORTS_INOTIFY) || defined(GLOGG_SUPPORTS_KQUEUE) || defined(WIN32)
+#if defined(NEOGLOGG_SUPPORTS_INOTIFY) || defined(NEOGLOGG_SUPPORTS_KQUEUE) || defined(WIN32)
     fileWatcher_ = std::make_shared<PlatformFileWatcher>();
 #else
     fileWatcher_ = std::make_shared<QtFileWatcher>();

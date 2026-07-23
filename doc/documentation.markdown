@@ -1,10 +1,10 @@
 
 ## Getting started
 
-_glogg_ can be started from the command line, optionally passing the file to
+_neoglogg_ can be started from the command line, optionally passing the file to
 open as an argument, or via the desktop environment's menu or file
 association.
-If no file name is passed, _glogg_ will initially open the last used file.
+If no file name is passed, _neoglogg_ will initially open the last used file.
 
 The main window is divided in three parts : the top displays the log file. The
 bottom part, called the "filtered view", shows the results of the search. The
@@ -18,7 +18,7 @@ circle in both windows.
 ## Exploring log files
 
 Regular expressions are a powerful way to extract the information you are
-interested in from the log file. _glogg_ uses _extended regular expressions_.
+interested in from the log file. _neoglogg_ uses _extended regular expressions_.
 
 One of the most useful regexp feature when exploring logs is the
 _alternation_, using parentheses and the | operator. It searches for several
@@ -37,7 +37,7 @@ want to know what kind of connection has been opened:
 
 `Entering (Open|Close)Connection|Created a .* connection`
 
-`.*` will match any sequence of character on a single line, but _glogg_ will only
+`.*` will match any sequence of character on a single line, but _neoglogg_ will only
 display lines with a space and the word `connection` somewhere after `Created a`
 
 In addition to the filtered window, the match overview on the right hand side
@@ -55,7 +55,7 @@ the first successful filter are applied.
 
 ## Marking lines in the log file
 
-In addition to regexp matches, _glogg_ enable the user to mark any interesting
+In addition to regexp matches, _neoglogg_ enable the user to mark any interesting
 line in the log. To do this, click on the round bullet in the left margin in
 front of the line that needs to be marked.
 
@@ -64,7 +64,7 @@ appears as blue lines in the match overview.
 
 ## Browsing changing log files
 
-_glogg_ can display and search through logs while they are written to disk, as
+_neoglogg_ can display and search through logs while they are written to disk, as
 it might be the case when debugging a running program or server.
 The log is automatically updated when it grows, but the 'Auto-refresh' option
 must be enabled if you want the search results to be automatically refreshed as
@@ -82,7 +82,7 @@ recommended.
 
 ### Search options
 
-Determines which type of regular expression _glogg_ will use when filtering
+Determines which type of regular expression _neoglogg_ will use when filtering
 lines for the bottom window, and when using QuickFind.
 
 * Extended Regexp: the default, uses regular expressions similar to those used by Perl
@@ -91,7 +91,7 @@ lines for the bottom window, and when using QuickFind.
 
 ## Keyboard commands
 
-_glogg_ keyboard commands try to approximatively emulate the default bindings
+_neoglogg_ keyboard commands try to approximatively emulate the default bindings
 used by the classic Unix utilities _vi_ and _less_.
 
 The main commands are:

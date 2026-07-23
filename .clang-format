@@ -7,7 +7,7 @@ Standard: Cpp11
 IndentWidth: 4
 BreakBeforeBraces: Linux
 
-# Glogg-specific options
+# Neoglogg-specific options
 SpacesInParentheses: true
 SpacesInSquareBrackets: true
 DerivePointerAlignment: true

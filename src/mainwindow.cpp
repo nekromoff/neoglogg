@@ -1,20 +1,20 @@
 /*
  * Copyright (C) 2009, 2010, 2011, 2013, 2014 Nicolas Bonnefon and other contributors
  *
- * This file is part of glogg.
+ * This file is part of neoglogg.
  *
- * glogg is free software: you can redistribute it and/or modify
+ * neoglogg is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * glogg is distributed in the hope that it will be useful,
+ * neoglogg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with glogg.  If not, see <http://www.gnu.org/licenses/>.
+ * along with neoglogg.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 // This file implements MainWindow. It is responsible for creating and
@@ -63,7 +63,7 @@ MainWindow::MainWindow( std::unique_ptr<Session> session,
     signalMux_(),
     quickFindMux_( session_->getQuickFindPattern() ),
     mainTabWidget_()
-#ifdef GLOGG_SUPPORTS_VERSION_CHECKING
+#ifdef NEOGLOGG_SUPPORTS_VERSION_CHECKING
     ,versionChecker_()
 #endif
 {
@@ -79,10 +79,10 @@ MainWindow::MainWindow( std::unique_ptr<Session> session,
     setGeometry( geometry.x() + 20, geometry.y() + 40,
             geometry.width() - 140, geometry.height() - 140 );
 
-    mainIcon_.addFile( ":/images/hicolor/16x16/glogg.png" );
-    mainIcon_.addFile( ":/images/hicolor/24x24/glogg.png" );
-    mainIcon_.addFile( ":/images/hicolor/32x32/glogg.png" );
-    mainIcon_.addFile( ":/images/hicolor/48x48/glogg.png" );
+    mainIcon_.addFile( ":/images/hicolor/16x16/neoglogg.png" );
+    mainIcon_.addFile( ":/images/hicolor/24x24/neoglogg.png" );
+    mainIcon_.addFile( ":/images/hicolor/32x32/neoglogg.png" );
+    mainIcon_.addFile( ":/images/hicolor/48x48/neoglogg.png" );
 
     setWindowIcon( mainIcon_ );
 
@@ -159,7 +159,7 @@ MainWindow::MainWindow( std::unique_ptr<Session> session,
     connect( qApp, SIGNAL( loadFile( const QString& ) ),
              this, SLOT( loadFileNonInteractive( const QString& ) ) );
 
-#ifdef GLOGG_SUPPORTS_VERSION_CHECKING
+#ifdef NEOGLOGG_SUPPORTS_VERSION_CHECKING
     // Version checker notification
     connect( &versionChecker_, SIGNAL( newVersionFound( const QString& ) ),
             this, SLOT( newVersionNotification( const QString& ) ) );
@@ -220,7 +220,7 @@ void MainWindow::startBackgroundTasks()
 {
     LOG(logDEBUG) << "startBackgroundTasks";
 
-#ifdef GLOGG_SUPPORTS_VERSION_CHECKING
+#ifdef NEOGLOGG_SUPPORTS_VERSION_CHECKING
     versionChecker_.startCheck();
 #endif
 }
@@ -542,11 +542,11 @@ void MainWindow::options()
 // Opens the 'About' dialog box.
 void MainWindow::about()
 {
-    QMessageBox::about(this, tr("About glogg"),
-            tr("<h2>glogg " GLOGG_VERSION "</h2>"
+    QMessageBox::about(this, tr("About neoglogg"),
+            tr("<h2>neoglogg " NEOGLOGG_VERSION "</h2>"
                 "<p>A fast, advanced log explorer."
-#ifdef GLOGG_COMMIT
-                "<p>Built " GLOGG_DATE " from " GLOGG_COMMIT
+#ifdef NEOGLOGG_COMMIT
+                "<p>Built " NEOGLOGG_DATE " from " NEOGLOGG_COMMIT
 #endif
                 "<p><a href=\"http://glogg.bonnefon.org/\">http://glogg.bonnefon.org/</a></p>"
                 "<p>Copyright &copy; 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016 Nicolas Bonnefon and other contributors"
@@ -774,7 +774,7 @@ void MainWindow::newVersionNotification( const QString& new_version )
         new_version.toStdString() << " )";
 
     QMessageBox msgBox;
-    msgBox.setText( QString( "A new version of glogg (%1) is available for download <p>"
+    msgBox.setText( QString( "A new version of neoglogg (%1) is available for download <p>"
                 "<a href=\"http://glogg.bonnefon.org/download.html\">http://glogg.bonnefon.org/download.html</a>" 
                 ).arg( new_version ) );
     msgBox.exec();
@@ -873,7 +873,7 @@ bool MainWindow::loadFile( const QString& fileName )
         mainTabWidget_.setCurrentIndex( index );
 
         // Update the recent files list
-        // (reload the list first in case another glogg changed it)
+        // (reload the list first in case another neoglogg changed it)
         GetPersistentInfo().retrieve( "recentFiles" );
         recentFiles_->addRecent( fileName );
         GetPersistentInfo().save( "recentFiles" );
@@ -912,9 +912,9 @@ void MainWindow::updateTitleBar( const QString& file_name )
         shownName = strippedName( file_name );
 
     setWindowTitle(
-            tr("%1 - %2").arg(shownName).arg(tr("glogg"))
-#ifdef GLOGG_COMMIT
-            + " (dev build " GLOGG_VERSION ")"
+            tr("%1 - %2").arg(shownName).arg(tr("neoglogg"))
+#ifdef NEOGLOGG_COMMIT
+            + " (dev build " NEOGLOGG_VERSION ")"
 #endif
             );
 }

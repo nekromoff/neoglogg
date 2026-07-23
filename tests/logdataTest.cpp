@@ -14,7 +14,7 @@
 
 static const qint64 SL_NB_LINES = 5000LL;
 static const int SL_LINE_PER_PAGE = 70;
-static const char* sl_format="LOGDATA is a part of glogg, we are going to test it thoroughly, this is line %06d\n";
+static const char* sl_format="LOGDATA is a part of neoglogg, we are going to test it thoroughly, this is line %06d\n";
 static const int SL_LINE_LENGTH = 83; // Without the final '\n' !
 
 static const char* partial_line_begin = "123... beginning of line.";
@@ -187,7 +187,7 @@ TEST_F( LogDataBehaviour, readFunctions ) {
     log_data.attachFile( TMPDIR "/smalllog.txt" );
     endSpy.safeWait( 10000 );
 
-    QString ref = QString::fromUtf8( "LOGDATA is a part of glogg, we are going to test it thoroughly, this is line 000012" );
+    QString ref = QString::fromUtf8( "LOGDATA is a part of neoglogg, we are going to test it thoroughly, this is line 000012" );
 
     ASSERT_THAT( QString::compare( log_data.getLineString( 12 ), ref ), 0 );
     ASSERT_THAT( QString::compare( log_data.getExpandedLineString( 12 ), ref ), 0 );

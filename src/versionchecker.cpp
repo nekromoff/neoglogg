@@ -1,20 +1,20 @@
 /*
  * Copyright (C) 2014 Nicolas Bonnefon and other contributors
  *
- * This file is part of glogg.
+ * This file is part of neoglogg.
  *
- * glogg is free software: you can redistribute it and/or modify
+ * neoglogg is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * glogg is distributed in the hope that it will be useful,
+ * neoglogg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with glogg.  If not, see <http://www.gnu.org/licenses/>.
+ * along with neoglogg.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "versionchecker.h"
@@ -24,15 +24,15 @@
 #include "log.h"
 
 #if defined(_WIN64)
-#  define GLOGG_OS "win64"
+#  define NEOGLOGG_OS "win64"
 #elif defined(_WIN32)
-#  define GLOGG_OS "win32"
+#  define NEOGLOGG_OS "win32"
 #elif defined(__APPLE__)
-#  define GLOGG_OS "OSX"
+#  define NEOGLOGG_OS "OSX"
 #elif defined(__linux__)
-#  define GLOGG_OS "linux"
+#  define NEOGLOGG_OS "linux"
 #else
-#  define GLOGG_OS "other"
+#  define NEOGLOGG_OS "other"
 #endif
 
 const char* VersionChecker::VERSION_URL =
@@ -92,7 +92,7 @@ void VersionChecker::startCheck()
 
             QNetworkRequest request;
             request.setUrl( QUrl( VERSION_URL ) );
-            request.setRawHeader( "User-Agent", "glogg-" GLOGG_VERSION " (" GLOGG_OS ")" );
+            request.setRawHeader( "User-Agent", "neoglogg-" NEOGLOGG_VERSION " (" NEOGLOGG_OS ")" );
             manager_.get( request );
         }
         else
@@ -112,7 +112,7 @@ void VersionChecker::downloadFinished( QNetworkReply* reply )
         QString new_version = QString( reply->read( 256 ) ).remove( '\n' );
 
         LOG(logDEBUG) << "Latest version is " << new_version.toStdString();
-        if ( isVersionNewer( QString( GLOGG_VERSION ), new_version ) )
+        if ( isVersionNewer( QString( NEOGLOGG_VERSION ), new_version ) )
         {
             LOG(logDEBUG) << "Sending new version notification";
             emit newVersionFound( new_version );

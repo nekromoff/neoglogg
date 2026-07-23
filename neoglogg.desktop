@@ -1,19 +1,19 @@
 [Desktop Entry]
-Name=glogg
+Name=neoglogg
 GenericName=Log file browser
-Exec=glogg %F
-Icon=glogg
+Exec=neoglogg %F
+Icon=neoglogg
 Type=Application
-Comment=A smart interactive log explorer.
+Comment=A smart interactive log explorer. Updated and upgraded.
 Terminal=false
 Categories=Qt;Utility;TextTools;Development;
 MimeType=text/plain;
 Actions=Session;NewInstance;
 
 [Desktop Action Session]
-Exec=glogg --load-session %F
+Exec=neoglogg --load-session %F
 Name=Open With Previous Session
 
 [Desktop Action NewInstance]
-Exec=glogg --multi %F
-Name=Open In A New glogg Window
+Exec=neoglogg --multi %F
+Name=Open In A New neoglogg Window

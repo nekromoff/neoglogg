@@ -2,20 +2,20 @@
  * Copyright (C) 2009, 2010, 2011, 2012, 2013, 2015 Nicolas Bonnefon
  * and other contributors
  *
- * This file is part of glogg.
+ * This file is part of neoglogg.
  *
- * glogg is free software: you can redistribute it and/or modify
+ * neoglogg is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * glogg is distributed in the hope that it will be useful,
+ * neoglogg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with glogg.  If not, see <http://www.gnu.org/licenses/>.
+ * along with neoglogg.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 // This file implements the AbstractLogView base class.
@@ -810,7 +810,7 @@ void AbstractLogView::paintEvent( QPaintEvent* paintEvent )
         ", " << invalidRect.bottomRight().x() <<
         ", " << invalidRect.bottomRight().y();
 
-#ifdef GLOGG_PERF_MEASURE_FPS
+#ifdef NEOGLOGG_PERF_MEASURE_FPS
     static uint32_t maxline = logData->getNbLine();
     if ( ! perfCounter_.addEvent() && logData->getNbLine() > maxline ) {
         LOG(logWARNING) << "Redraw per second: " << perfCounter_.readAndReset()

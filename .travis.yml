@@ -35,6 +35,6 @@ before_script:
  - qmake -v
 
 script:
- - '[ "$TRAVIS_OS_NAME" != linux ] || qmake QMAKE_CXX=g++-6 glogg.pro'
- - '[ "$TRAVIS_OS_NAME" != osx ] || qmake glogg.pro'
+ - '[ "$TRAVIS_OS_NAME" != linux ] || qmake QMAKE_CXX=g++-6 neoglogg.pro'
+ - '[ "$TRAVIS_OS_NAME" != osx ] || qmake neoglogg.pro'
  - make

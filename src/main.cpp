@@ -1,20 +1,20 @@
 /*
  * Copyright (C) 2009, 2010, 2011, 2013, 2014 Nicolas Bonnefon and other contributors
  *
- * This file is part of glogg.
+ * This file is part of neoglogg.
  *
- * glogg is free software: you can redistribute it and/or modify
+ * neoglogg is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * glogg is distributed in the hope that it will be useful,
+ * neoglogg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with glogg.  If not, see <http://www.gnu.org/licenses/>.
+ * along with neoglogg.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <QFileInfo>
@@ -32,7 +32,7 @@ using namespace std;
 #include "unistd.h"
 #endif
 
-#include "gloggapp.h"
+#include "neogloggapp.h"
 #include "persistentinfo.h"
 #include "sessioninfo.h"
 #include "configuration.h"
@@ -45,9 +45,9 @@ using namespace std;
 
 #include "externalcom.h"
 
-#ifdef GLOGG_SUPPORTS_DBUS
+#ifdef NEOGLOGG_SUPPORTS_DBUS
 #include "dbusexternalcom.h"
-#elif GLOGG_SUPPORTS_SOCKETIPC
+#elif NEOGLOGG_SUPPORTS_SOCKETIPC
 #include "socketexternalcom.h"
 #endif
 
@@ -58,7 +58,7 @@ static void print_version();
 
 int main(int argc, char *argv[])
 {
-    GloggApp app(argc, argv);
+    NeogloggApp app(argc, argv);
 
     vector<string> filenames;
 
@@ -73,11 +73,11 @@ int main(int argc, char *argv[])
     TLogLevel logLevel = logWARNING;
 
     try {
-        po::options_description desc("Usage: glogg [options] [files]");
+        po::options_description desc("Usage: neoglogg [options] [files]");
         desc.add_options()
             ("help,h", "print out program usage (this message)")
-            ("version,v", "print glogg's version information")
-            ("multi,m", "allow multiple instance of glogg to run simultaneously (use together with -s)")
+            ("version,v", "print neoglogg's version information")
+            ("multi,m", "allow multiple instance of neoglogg to run simultaneously (use together with -s)")
             ("load-session,s", "load the previous session (default when no file is passed)")
             ("new-session,n", "do not load the previous session (default when a file is passed)")
 #ifdef _WIN32
@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
     if ( log_to_file )
     {
         char file_name[255];
-        snprintf( file_name, sizeof file_name, "glogg_%d.log", getpid() );
+        snprintf( file_name, sizeof file_name, "neoglogg_%d.log", getpid() );
         FILE* file = fopen(file_name, "w");
         Output2FILE::Stream() = file;
     }
@@ -182,11 +182,11 @@ int main(int argc, char *argv[])
     shared_ptr<ExternalInstance> externalInstance = nullptr;
 
     try {
-#ifdef GLOGG_SUPPORTS_DBUS
+#ifdef NEOGLOGG_SUPPORTS_DBUS
         externalCommunicator = make_shared<DBusExternalCommunicator>();
         externalInstance = shared_ptr<ExternalInstance>(
                 externalCommunicator->otherInstance() );
-#elif GLOGG_SUPPORTS_SOCKETIPC
+#elif NEOGLOGG_SUPPORTS_SOCKETIPC
         externalCommunicator = make_shared<SocketExternalCommunicator>();
         auto ptr = externalCommunicator->otherInstance();
         externalInstance = shared_ptr<ExternalInstance>( ptr );
@@ -199,7 +199,7 @@ int main(int argc, char *argv[])
     LOG(logDEBUG) << "externalInstance = " << externalInstance;
     if ( ( ! multi_instance ) && externalInstance ) {
         uint32_t version = externalInstance->getVersion();
-        LOG(logINFO) << "Found another glogg (version = "
+        LOG(logINFO) << "Found another neoglogg (version = "
             << std::setbase(16) << version << ")";
 
         for ( const auto& filename: filenames ) {
@@ -209,7 +209,7 @@ int main(int argc, char *argv[])
         return 0;
     }
     else {
-        // FIXME: there is a race condition here. One glogg could start
+        // FIXME: there is a race condition here. One neoglogg could start
         // between the declaration of externalInstance and here,
         // is it a problem?
         if ( externalCommunicator )
@@ -231,14 +231,14 @@ int main(int argc, char *argv[])
             std::make_shared<SavedSearches>(), QString( "savedSearches" ) );
     GetPersistentInfo().registerPersistable(
             std::make_shared<RecentFiles>(), QString( "recentFiles" ) );
-#ifdef GLOGG_SUPPORTS_VERSION_CHECKING
+#ifdef NEOGLOGG_SUPPORTS_VERSION_CHECKING
     GetPersistentInfo().registerPersistable(
             std::make_shared<VersionCheckerConfig>(), QString( "versionChecker" ) );
 #endif
 
 #ifdef _WIN32
     // Allow the app to raise it's own windows (in case an external
-    // glogg send us a file to open)
+    // neoglogg send us a file to open)
     AllowSetForegroundWindow(ASFW_ANY);
 #endif
 
@@ -277,9 +277,9 @@ int main(int argc, char *argv[])
 
 static void print_version()
 {
-    cout << "glogg " GLOGG_VERSION "\n";
-#ifdef GLOGG_COMMIT
-    cout << "Built " GLOGG_DATE " from " GLOGG_COMMIT "\n";
+    cout << "neoglogg " NEOGLOGG_VERSION "\n";
+#ifdef NEOGLOGG_COMMIT
+    cout << "Built " NEOGLOGG_DATE " from " NEOGLOGG_COMMIT "\n";
 #endif
     cout << "Copyright (C) 2009, 2010, 2011, 2012, 2013, 2014, 2015 Nicolas Bonnefon and other contributors\n";
     cout << "This is free software.  You may redistribute copies of it under the terms of\n";

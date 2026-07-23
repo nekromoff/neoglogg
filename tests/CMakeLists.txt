@@ -3,7 +3,7 @@ INCLUDE (CheckCXXSourceCompiles)
 INCLUDE (CheckCXXCompilerFlag)
 
 cmake_minimum_required(VERSION 2.8.12)
-project(glogg_tests)
+project(neoglogg_tests)
 
 # Qt
 
@@ -79,7 +79,7 @@ include_directories(
 link_directories($ENV{GMOCK_HOME}/mybuild $ENV{GMOCK_HOME}/mybuild/gtest)
 
 # Sources
-set(glogg_SOURCES
+set(neoglogg_SOURCES
     ../src/session.cpp
     ../src/data/abstractlogdata.cpp
     ../src/data/logdata.cpp
@@ -120,7 +120,7 @@ set(glogg_SOURCES
     ../src/filewatcher.cpp
 )
 
-set(glogg_HEADERS
+set(neoglogg_HEADERS
     ../src/mainwindow.h
     ../src/marks.h
     ../src/platformfilewatcher.h
@@ -128,20 +128,20 @@ set(glogg_HEADERS
 )
 
 # Unit tests
-set(glogg_UTESTS
+set(neoglogg_UTESTS
     watchtowerTest.cpp
     linepositionarrayTest.cpp
     encodingspeculatorTest.cpp
 )
 
 # Integration tests
-set(glogg_ITESTS
+set(neoglogg_ITESTS
     logdataTest.cpp
     logfiltereddataTest.cpp
 )
 
 # Performance tests
-set(glogg_PTESTS
+set(neoglogg_PTESTS
     logdataPerfTest.cpp
     logfiltereddataPerfTest.cpp
 )
@@ -155,44 +155,44 @@ if (WIN32)
 elseif (LINUX)
     # set(FileWatcherEngine_SOURCES ../src/inotifywatchtowerdriver.cpp)
 elseif (APPLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGLOGG_SUPPORTS_KQUEUE")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNEOGLOGG_SUPPORTS_KQUEUE")
     set(FileWatcherEngine_SOURCES
          ../src/kqueuewatchtowerdriver.cpp
     )
 endif (WIN32)
 
 # Compiler flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${PARANOID_FLAGS} -fPIC -DGLOGG_VERSION=\\\"unit_tests\\\" -g -gdwarf-2")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${PARANOID_FLAGS} -fPIC -DNEOGLOGG_VERSION=\\\"unit_tests\\\" -g -gdwarf-2")
 
 # Add test cpp file
-add_executable(glogg_tests
-    ${glogg_SOURCES}
+add_executable(neoglogg_tests
+    ${neoglogg_SOURCES}
     ${FileWatcherEngine_SOURCES}
-    ${glogg_UTESTS}
+    ${neoglogg_UTESTS}
 )
 
 # Link test executable against gtest & gtest_main
-target_link_libraries(glogg_tests ${LIBS} gtest_main pthread Qt5::Widgets)
+target_link_libraries(neoglogg_tests ${LIBS} gtest_main pthread Qt5::Widgets)
 
-add_executable(glogg_itests
-    ${glogg_SOURCES}
+add_executable(neoglogg_itests
+    ${neoglogg_SOURCES}
     ${FileWatcherEngine_SOURCES}
-    ${glogg_ITESTS}
+    ${neoglogg_ITESTS}
     itests.cpp
 )
 
-target_link_libraries(glogg_itests ${LIBS} pthread Qt5::Widgets Qt5::Test)
+target_link_libraries(neoglogg_itests ${LIBS} pthread Qt5::Widgets Qt5::Test)
 
-add_executable(glogg_ptests
-    ${glogg_SOURCES}
+add_executable(neoglogg_ptests
+    ${neoglogg_SOURCES}
     ${FileWatcherEngine_SOURCES}
-    ${glogg_PTESTS}
+    ${neoglogg_PTESTS}
     itests.cpp
 )
 
-target_link_libraries(glogg_ptests ${LIBS} pthread Qt5::Widgets Qt5::Test)
+target_link_libraries(neoglogg_ptests ${LIBS} pthread Qt5::Widgets Qt5::Test)
 
 add_test(
-    NAME glogg_tests
-    COMMAND glogg_tests
+    NAME neoglogg_tests
+    COMMAND neoglogg_tests
 )

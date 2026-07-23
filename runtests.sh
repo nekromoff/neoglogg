@@ -8,9 +8,9 @@ ICON_ERROR=gtk-cancel
 
 if [ `which notify-send` ]; then
     if [ "$result" != "0" ]; then
-        notify-send -i $ICON_ERROR "glogg" "Tests failed!"
+        notify-send -i $ICON_ERROR "neoglogg" "Tests failed!"
     else
-        notify-send -i $ICON_OK "glogg" "Tests passed!"
+        notify-send -i $ICON_OK "neoglogg" "Tests passed!"
     fi
 fi
 

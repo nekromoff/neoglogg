@@ -1,20 +1,20 @@
 /*
  * Copyright (C) 2011, 2014 Nicolas Bonnefon and other contributors
  *
- * This file is part of glogg.
+ * This file is part of neoglogg.
  *
- * glogg is free software: you can redistribute it and/or modify
+ * neoglogg is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * glogg is distributed in the hope that it will be useful,
+ * neoglogg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with glogg.  If not, see <http://www.gnu.org/licenses/>.
+ * along with neoglogg.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 // Implements PersistentInfo, a singleton class which store/retrieve objects
@@ -45,22 +45,22 @@ void PersistentInfo::migrateAndInit()
     assert( initialised_ == false );
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
     // On Windows, we use .ini files and import from the registry if no
-    // .ini file is found (glogg <= 0.9 used the registry).
+    // .ini file is found (neoglogg <= 0.9 used the registry).
 
     // This store the config file in %appdata%
     settings_ = new QSettings( QSettings::IniFormat,
-            QSettings::UserScope, "glogg", "glogg" );
+            QSettings::UserScope, "neoglogg", "neoglogg" );
 
     if ( settings_->childKeys().count() == 0 ) {
         LOG(logWARNING) << "INI file empty, trying to import from registry";
-        QSettings registry( "glogg", "glogg" );
+        QSettings registry( "neoglogg", "neoglogg" );
         foreach ( QString key, registry.allKeys() ) {
             settings_->setValue( key, registry.value( key ) );
         }
     }
 #else
     // We use default Qt storage on proper OSes
-    settings_ = new QSettings( "glogg", "glogg" );
+    settings_ = new QSettings( "neoglogg", "neoglogg" );
 #endif
     initialised_ = true;
 }

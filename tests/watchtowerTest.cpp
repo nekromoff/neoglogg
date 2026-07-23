@@ -37,7 +37,7 @@ class WatchTowerBehaviour: public testing::Test {
     {
         const char* name;
 #if _WIN32
-        name = _tempnam( "c:\\temp", "glogg_test" );
+        name = _tempnam( "c:\\temp", "neoglogg_test" );
 #else
         name = tmpnam( nullptr );
 #endif

@@ -1,20 +1,20 @@
 /*
  * Copyright (C) 2014 Nicolas Bonnefon and other contributors
  *
- * This file is part of glogg.
+ * This file is part of neoglogg.
  *
- * glogg is free software: you can redistribute it and/or modify
+ * neoglogg is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * glogg is distributed in the hope that it will be useful,
+ * neoglogg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with glogg.  If not, see <http://www.gnu.org/licenses/>.
+ * along with neoglogg.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "dbusexternalcom.h"
@@ -23,7 +23,7 @@
 
 #include "log.h"
 
-static const char* DBUS_SERVICE_NAME = "org.bonnefon.glogg";
+static const char* DBUS_SERVICE_NAME = "org.bonnefon.neoglogg";
 
 DBusExternalCommunicator::DBusExternalCommunicator()
 {
@@ -40,7 +40,7 @@ DBusExternalCommunicator::DBusExternalCommunicator()
              this, SIGNAL( loadFile( const QString& ) ) );
 }
 
-// If listening fails (e.g. another glogg is already listening,
+// If listening fails (e.g. another neoglogg is already listening,
 // the function will fail silently and no listening will be done.
 void DBusExternalCommunicator::startListening()
 {
@@ -60,7 +60,7 @@ ExternalInstance* DBusExternalCommunicator::otherInstance() const
         return static_cast<ExternalInstance*>( new DBusExternalInstance() );
     }
     catch ( CantCreateExternalErr ) {
-        LOG(logINFO) << "Cannot find external D-Bus correspondant, we are the only glogg out there.";
+        LOG(logINFO) << "Cannot find external D-Bus correspondant, we are the only neoglogg out there.";
         return nullptr;
     }
 }
