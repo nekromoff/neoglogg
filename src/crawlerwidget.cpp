@@ -293,6 +293,37 @@ void CrawlerWidget::stopSearch()
     logFilteredData_->interruptSearch();
     searchState_.stopSearch();
     printSearchInfoMessage();
+
+    searchInProgress_ = false;
+    updateStopClearButton();
+}
+
+// Clear the search line and drop the results of the last search.
+void CrawlerWidget::clearSearch()
+{
+    searchLineEdit->clearEditText();
+
+    // With no text this tears down the search: it clears the results, the
+    // overview and the state, and blanks the info line.
+    replaceCurrentSearch( QString() );
+
+    updateStopClearButton();
+}
+
+void CrawlerWidget::stopOrClearSearch()
+{
+    if ( searchInProgress_ )
+        stopSearch();
+    else
+        clearSearch();
+}
+
+// Keep the button next to the search line saying what it will actually do.
+void CrawlerWidget::updateStopClearButton()
+{
+    stopButton->setToolTip( searchInProgress_
+            ? tr("Stop the search in progress")
+            : tr("Clear the search text and its results") );
 }
 
 // When receiving the 'newDataAvailable' signal from LogFilteredData
@@ -304,8 +335,9 @@ void CrawlerWidget::updateFilteredView( int nbMatches, int progress, qint64 init
         // Searching done
         printSearchInfoMessage( nbMatches );
         searchInfoLine->hideGauge();
-        // De-activate the stop button
-        stopButton->setEnabled( false );
+        // The button goes back to being a "clear"
+        searchInProgress_ = false;
+        updateStopClearButton();
     }
     else {
         // Search in progress
@@ -439,6 +471,9 @@ void CrawlerWidget::applyConfiguration()
     logData_->setPollingInterval(
             config->pollingEnabled() ? config->pollIntervalMs() : 0 );
 
+    // Search settings (thread count); takes effect on the next search
+    logFilteredData_->applyConfiguration();
+
     // Update the SearchLine (history)
     updateSearchCombo();
 }
@@ -552,6 +587,39 @@ void CrawlerWidget::searchBackward()
     LOG(logDEBUG) << "CrawlerWidget::searchBackward";
 
     activeView()->searchBackward();
+}
+
+void CrawlerWidget::searchRangeChangedHandler( int state )
+{
+    const bool limited = ( state == Qt::Checked );
+
+    searchRangeFromEdit->setEnabled( limited );
+    searchRangeToEdit->setEnabled( limited );
+    searchRangeToLabel->setEnabled( limited );
+}
+
+// The boxes hold 1-based line numbers, which is what the views show; the
+// data layer counts from 0.
+SearchRange CrawlerWidget::currentSearchRange() const
+{
+    if ( searchRangeCheck->checkState() != Qt::Checked )
+        return SearchRange();
+
+    bool ok = false;
+
+    qint64 first = searchRangeFromEdit->text().toLongLong( &ok );
+    first = ok ? qMax( 0LL, first - 1 ) : 0;
+
+    ok = false;
+    qint64 last = searchRangeToEdit->text().toLongLong( &ok );
+    // A negative upper bound means "no upper bound"
+    last = ok ? last - 1 : -1;
+
+    // Tolerate the bounds being given the wrong way round
+    if ( ( last >= 0 ) && ( last < first ) )
+        qSwap( first, last );
+
+    return SearchRange( first, last );
 }
 
 void CrawlerWidget::searchRefreshChangedHandler( int state )
@@ -697,7 +765,47 @@ void CrawlerWidget::setup()
     searchInfoLineDefaultPalette = searchInfoLine->palette();
 
     ignoreCaseCheck = new QCheckBox( "Ignore &case" );
+    ignoreCaseCheck->setToolTip( tr(
+                "Match the search text regardless of upper or lower case.\n"
+                "Changing this re-runs the current search." ) );
+    searchRangeCheck = new QCheckBox( "&Lines" );
+    searchRangeCheck->setToolTip( tr(
+                "Search only part of the file, instead of all of it.\n"
+                "Useful to narrow a search down to a known region of a very "
+                "large log." ) );
+
+    searchRangeFromEdit = new QLineEdit();
+    searchRangeFromEdit->setPlaceholderText( tr("first") );
+    searchRangeFromEdit->setToolTip( tr(
+                "First line to search, counting from 1. "
+                "Leave empty to start at the beginning of the file." ) );
+    searchRangeFromEdit->setValidator(
+            new QIntValidator( 1, INT_MAX, searchRangeFromEdit ) );
+
+    searchRangeToLabel = new QLabel( tr("to") );
+
+    searchRangeToEdit = new QLineEdit();
+    searchRangeToEdit->setPlaceholderText( tr("last") );
+    searchRangeToEdit->setToolTip( tr(
+                "Last line to search, counting from 1, inclusive.\n"
+                "Leave empty to search to the end of the file, following it "
+                "as it grows." ) );
+    searchRangeToEdit->setValidator(
+            new QIntValidator( 1, INT_MAX, searchRangeToEdit ) );
+
+    // The line number boxes only need to be as wide as a line number
+    const int rangeEditWidth =
+        searchRangeFromEdit->fontMetrics().width( "0000000" );
+    searchRangeFromEdit->setMaximumWidth( rangeEditWidth );
+    searchRangeToEdit->setMaximumWidth( rangeEditWidth );
+
     searchRefreshCheck = new QCheckBox( "Auto-&refresh" );
+    searchRefreshCheck->setToolTip( tr(
+                "Keep the results below up to date: when the file grows, "
+                "search the new lines\nand add any matches. This does not "
+                "scroll the view above, see View > Follow File for that.\n"
+                "Turned off automatically if the file is truncated or the "
+                "search text is changed." ) );
 
     // Construct the Search line
     searchLabel = new QLabel(tr("&Text: "));
@@ -710,14 +818,21 @@ void CrawlerWidget::setup()
 
     searchLabel->setBuddy( searchLineEdit );
 
+    searchLineEdit->setToolTip( tr(
+                "Text to search for in the file above. Previous searches are "
+                "kept in the drop-down." ) );
+
     searchButton = new QToolButton();
     searchButton->setText( tr("&Search") );
     searchButton->setAutoRaise( true );
+    searchButton->setToolTip( tr("Search the whole file for the text above") );
 
     stopButton = new QToolButton();
     stopButton->setIcon( QIcon(":/images/stop14.png") );
     stopButton->setAutoRaise( true );
-    stopButton->setEnabled( false );
+    // Always available: it stops a running search, and clears otherwise.
+    stopButton->setEnabled( true );
+    updateStopClearButton();
 
     QHBoxLayout* searchLineLayout = new QHBoxLayout;
     searchLineLayout->addWidget(searchLabel);
@@ -732,6 +847,10 @@ void CrawlerWidget::setup()
     searchInfoLineLayout->addWidget( visibilityBox );
     searchInfoLineLayout->addWidget( searchInfoLine );
     searchInfoLineLayout->addWidget( ignoreCaseCheck );
+    searchInfoLineLayout->addWidget( searchRangeCheck );
+    searchInfoLineLayout->addWidget( searchRangeFromEdit );
+    searchInfoLineLayout->addWidget( searchRangeToLabel );
+    searchInfoLineLayout->addWidget( searchRangeToEdit );
     searchInfoLineLayout->addWidget( searchRefreshCheck );
 
     // Construct the bottom window
@@ -760,6 +879,9 @@ void CrawlerWidget::setup()
     ignoreCaseCheck->setCheckState( config->isSearchIgnoreCaseDefault() ?
             Qt::Checked : Qt::Unchecked );
 
+    // The line range starts off unrestricted, with the boxes greyed out
+    searchRangeChangedHandler( searchRangeCheck->checkState() );
+
     // Connect the signals
     connect(searchLineEdit->lineEdit(), SIGNAL( returnPressed() ),
             searchButton, SIGNAL( clicked() ));
@@ -768,7 +890,7 @@ void CrawlerWidget::setup()
     connect(searchButton, SIGNAL( clicked() ),
             this, SLOT( startNewSearch() ) );
     connect(stopButton, SIGNAL( clicked() ),
-            this, SLOT( stopSearch() ) );
+            this, SLOT( stopOrClearSearch() ) );
 
     connect(visibilityBox, SIGNAL( currentIndexChanged( int ) ),
             this, SLOT( changeFilteredViewVisibility( int ) ) );
@@ -834,6 +956,14 @@ void CrawlerWidget::setup()
     connect( ignoreCaseCheck, SIGNAL( stateChanged( int ) ),
             this, SIGNAL( ignoreCaseChanged( int ) ) );
 
+    connect( searchRangeCheck, SIGNAL( stateChanged( int ) ),
+            this, SLOT( searchRangeChangedHandler( int ) ) );
+    // Enter in either box runs the search, like the search line does
+    connect( searchRangeFromEdit, SIGNAL( returnPressed() ),
+            searchButton, SIGNAL( clicked() ) );
+    connect( searchRangeToEdit, SIGNAL( returnPressed() ),
+            searchButton, SIGNAL( clicked() ) );
+
     // Switch between views
     connect( logMainView, SIGNAL( exitView() ),
             filteredView, SLOT( setFocus() ) );
@@ -894,10 +1024,11 @@ void CrawlerWidget::replaceCurrentSearch( const QString& searchText )
         QRegularExpression regexp( pattern, patternOptions );
 
         if ( regexp.isValid() ) {
-            // Activate the stop button
-            stopButton->setEnabled( true );
+            // The button becomes a "stop" for as long as the search runs
+            searchInProgress_ = true;
+            updateStopClearButton();
             // Start a new asynchronous search
-            logFilteredData_->runSearch( regexp );
+            logFilteredData_->runSearch( regexp, currentSearchRange() );
             // Accept auto-refresh of the search
             searchState_.startSearch();
         }

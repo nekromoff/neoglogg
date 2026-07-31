@@ -11,28 +11,47 @@ This is a partial update. I needed wrap lines features, but then decided to incl
 
 * Runs on Unix-like systems, Windows and Mac thanks to Qt
 * Provides a second window showing the result of the current search
-* Reads UTF-8 and ISO-8859-1 files
-* Supports grep/egrep like regular expressions
+* Searches in parallel across all available processor cores
+* Reads ISO-8859-1, UTF-8, UTF-16, CP1251, CP1252, Big5, GB18030, Shift_JIS
+  and KOI8-R, with automatic detection of the common ones
+* Supports Perl-compatible regular expressions (PCRE2, via `QRegularExpression`)
 * Colorizes the log and search results
 * Displays a context view of where in the log the lines of interest are
 * Is fast and reads the file directly from disk, without loading it into memory
+* Has a dark mode
 * Is open source, released under the GPL
 
 ## New in neoglogg
 
-* Line wrapping, toggled from the View menu. Long lines are wrapped at the viewport width instead of scrolling horizontally. Designed to stay fast on very long lines (hundreds of KB per line): the wrap layout is computed by simple character splitting and cached, and the view scrolls by visual rows (mouse wheel, arrow and page keys; Home/End jump to the first/last page of the top line). The setting is remembered across sessions.
+**Line wrapping**, toggled from the View menu. Long lines are wrapped at the
+viewport width instead of scrolling horizontally. Designed to stay fast on very
+long lines (hundreds of KB per line): the wrap layout is computed by simple
+character splitting and cached, and the view scrolls by visual rows (mouse
+wheel, arrow and page keys; Home/End jump to the first/last page of the top
+line). The setting is remembered across sessions.
 
-Merged from upstream glogg pull requests:
+** Multi file opening ** Several files can be opened at once from the Open dialog (Shift/Ctrl-select),
+  each in its own tab.
 
-* Dark theme option (Fusion palette) ([#301](https://github.com/nickbnf/glogg/pull/301))
-* Line-range filtering for searches, plus a decoded-line dock ([#297](https://github.com/nickbnf/glogg/pull/297))
-* Multi-language UI support ([#276](https://github.com/nickbnf/glogg/pull/276))
-* Opening multiple files at once from the Open dialog ([#272](https://github.com/nickbnf/glogg/pull/272))
-* Dynamic highlight colors based on the search pattern ([#241](https://github.com/nickbnf/glogg/pull/241))
-* Color picker for filter colors ([#194](https://github.com/nickbnf/glogg/pull/194))
-* "Follow file" checkbox in the toolbar ([#51](https://github.com/nickbnf/glogg/pull/51))
-* Up/Down keys move the selection like j/k ([#134](https://github.com/nickbnf/glogg/pull/134)), Escape closes the search bar and case-change re-runs the search ([#143](https://github.com/nickbnf/glogg/pull/143))
-* Bug fixes and internal cleanups: filtered-view index errors ([#223](https://github.com/nickbnf/glogg/pull/223)), out-of-bounds access ([#254](https://github.com/nickbnf/glogg/pull/254)), worker-thread atomicity ([#220](https://github.com/nickbnf/glogg/pull/220)), eager filtered-lines cache ([#224](https://github.com/nickbnf/glogg/pull/224)), Clang warnings ([#228](https://github.com/nickbnf/glogg/pull/228)), PersistentCopy removal ([#230](https://github.com/nickbnf/glogg/pull/230)), spelling ([#255](https://github.com/nickbnf/glogg/pull/255))
+**Parallel search.** Searches are spread across the machine's cores instead of
+running on a single thread. The file is cut into fixed-size chunks, a batch of
+them is searched concurrently, and the results are merged back in file order so
+the match list stays sorted. Cancelling a search commits only the chunks that
+actually finished, so a stopped-and-resumed search cannot skip lines. The worker
+count is configurable under Options → General → Search options; the default,
+"Automatic", uses one worker per core.
+
+**Dark mode.** An application-wide dark colour scheme (Fusion style plus a dark
+palette), toggled under Options → General → Appearance and remembered across
+sessions. The log views take their colours from the palette, so they follow the
+theme rather than staying white.
+
+Smaller changes:
+
+* "Follow File" in the View menu (shortcut `f`) keeps the top view pinned to the
+  end of a growing file. It is independent of "Auto-refresh" next to the search
+  box, which re-runs the current search over newly appended lines and adds any
+  new matches to the filtered view below.
 
 ## Download
 
@@ -43,7 +62,6 @@ Installers, binaries and source tarballs are not available yet.
 * GCC version 4.8.0 or later (any C++11 compiler should do)
 * Qt libraries, version 5.2.0 or later (Qt 5 only — Qt 4 and Qt 6 are not supported)
 * Boost "program-options" development libraries
-* Markdown HTML processor (optional, to generate HTML documentation)
 
 * **Linux (Debian/Ubuntu):** `qtbase5-dev`, `qt5-qmake`, `qtbase5-dev-tools`,
   `libboost-program-options-dev`; optionally `markdown` for the HTML docs.
@@ -83,9 +101,6 @@ the Boost libraries whose source are found at the specified path.
 The path should be the directory where the tarball from www.boost.org is
 extracted.
 (use this method on Windows or if Boost is not available on the system)
-
-The documentation is built and installed automatically if 'markdown'
-is found.
 
 ## Tests
 

@@ -54,6 +54,7 @@ SOURCES += \
     src/tabbedcrawlerwidget.cpp \
     src/viewtools.cpp \
     src/encodingspeculator.cpp \
+    src/theme.cpp \
     src/neogloggapp.cpp \
 
 INCLUDEPATH += src/
@@ -102,6 +103,7 @@ HEADERS += \
     src/externalcom.h \
     src/viewtools.h \
     src/encodingspeculator.h \
+    src/theme.h \
     src/neogloggapp.h \
 
 isEmpty(BOOST_PATH) {
@@ -159,10 +161,11 @@ else {
 doc_processor.name = markdown
 doc_processor.input = MARKDOWN
 doc_processor.output = doc/${QMAKE_FILE_BASE}.html
-doc_processor.commands = markdown ${QMAKE_FILE_NAME} | \
-    sed -f finish.sed >${QMAKE_FILE_OUT}
+doc_processor.commands = markdown ${QMAKE_FILE_NAME} >${QMAKE_FILE_OUT}
 
-doc_processor.CONFIG += target_predeps
+# Deliberately not target_predeps: the documentation is not needed to run
+# the program, and a missing or broken markdown processor should not stop
+# the build.
 doc_processor.variable_out = doc.files
 
 QMAKE_EXTRA_COMPILERS += doc_processor

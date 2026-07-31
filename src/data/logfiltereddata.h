@@ -54,7 +54,10 @@ class LogFilteredData : public AbstractLogData {
     // Starts the async search, sending newDataAvailable() when new data found.
     // If a search is already in progress this function will block until
     // it is done, so the application should call interruptSearch() first.
-    void runSearch(const QRegularExpression &regExp );
+    // The range is remembered and re-applied by updateSearch(), so a
+    // limited search stays limited as the file grows.
+    void runSearch(const QRegularExpression &regExp,
+            const SearchRange& range = SearchRange() );
     // Add to the existing search, starting at the line when the search was
     // last stopped. Used when the file on disk has been added too.
     void updateSearch();
@@ -63,6 +66,9 @@ class LogFilteredData : public AbstractLogData {
     void interruptSearch();
     // Clear the search and the list of results.
     void clearSearch();
+    // Re-read the settings that affect searching (currently the number of
+    // search threads). Takes effect on the next search started.
+    void applyConfiguration();
     // Returns the line number in the original LogData where the element
     // 'index' was found.
     qint64 getMatchingLineNumber( int index ) const;
@@ -140,6 +146,8 @@ class LogFilteredData : public AbstractLogData {
 
     const LogData* sourceLogData_;
     QRegularExpression currentRegExp_;
+    // Range the current search was restricted to, replayed by updateSearch()
+    SearchRange currentRange_;
     bool searchDone_;
     int maxLength_;
     int maxLengthMarks_;

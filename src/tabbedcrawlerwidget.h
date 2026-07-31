@@ -55,6 +55,11 @@ class TabbedCrawlerWidget : public QTabWidget
       const QIcon newfiltered_icon_;
 
       QTabBar myTabBar_;
+
+      // Side of the tab the data status icon sits on: the opposite one to
+      // the close button, so the two never fight over the same slot.
+      // Resolved once, in the constructor.
+      QTabBar::ButtonPosition iconSide_;
 };
 
 #endif

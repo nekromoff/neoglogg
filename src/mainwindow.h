@@ -86,6 +86,9 @@ class MainWindow : public QMainWindow
     void aboutQt();
     void encodingChanged( QAction* action );
 
+    // Re-apply the colour scheme after the options have been changed
+    void applyThemeConfiguration();
+
     // Change the view settings
     void toggleOverviewVisibility( bool isVisible );
     void toggleMainLineNumbersVisibility( bool isVisible );

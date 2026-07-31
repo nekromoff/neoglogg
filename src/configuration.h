@@ -86,6 +86,23 @@ class Configuration : public Persistable {
     { return lineWrap_; }
     void setLineWrapEnabled( bool lineWrap )
     { lineWrap_ = lineWrap; }
+    bool isDarkModeEnabled() const
+    { return darkMode_; }
+    void setDarkModeEnabled( bool darkMode )
+    { darkMode_ = darkMode; }
+
+    // Number of threads used to search. 0 means "decide automatically",
+    // use searchThreadCount() to get the number to actually run with.
+    unsigned searchThreads() const
+    { return searchThreads_; }
+    void setSearchThreads( unsigned threads )
+    { searchThreads_ = threads; }
+    // The configured thread count, resolved: never returns 0.
+    unsigned searchThreadCount() const;
+
+    // Upper bound accepted for searchThreads(), also used by the options
+    // dialog to bound its input.
+    static const unsigned maxSearchThreads = 64;
 
     // Default settings for new views
     bool isSearchAutoRefreshDefault() const
@@ -116,6 +133,10 @@ class Configuration : public Persistable {
     bool lineNumbersVisibleInMain_;
     bool lineNumbersVisibleInFiltered_;
     bool lineWrap_;
+    bool darkMode_;
+
+    // Search settings
+    unsigned searchThreads_;
 
     // Default settings for new views
     bool searchAutoRefresh_;

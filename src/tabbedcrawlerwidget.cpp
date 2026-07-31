@@ -21,6 +21,7 @@
 
 #include <QKeyEvent>
 #include <QLabel>
+#include <QStyle>
 
 #include "crawlerwidget.h"
 
@@ -30,8 +31,11 @@ TabbedCrawlerWidget::TabbedCrawlerWidget() : QTabWidget(),
     olddata_icon_( ":/images/olddata_icon.png" ),
     newdata_icon_( ":/images/newdata_icon.png" ),
     newfiltered_icon_( ":/images/newfiltered_icon.png" ),
-    myTabBar_()
+    myTabBar_(),
+    iconSide_( QTabBar::LeftSide )
 {
+    // The close button is left where the style puts it, which is the right
+    // hand side everywhere we support.
 #ifdef WIN32
     myTabBar_.setStyleSheet( "QTabBar::tab {\
             height: 20px; "
@@ -39,7 +43,6 @@ TabbedCrawlerWidget::TabbedCrawlerWidget() : QTabWidget(),
             "QTabBar::close-button {\
               height: 6px; width: 6px;\
               subcontrol-origin: padding;\
-              subcontrol-position: left;\
              }" );
 #else
     // On GTK style, it looks better with a smaller font
@@ -51,10 +54,20 @@ TabbedCrawlerWidget::TabbedCrawlerWidget() : QTabWidget(),
             "QTabBar::close-button {\
               height: 6px; width: 6px;\
               subcontrol-origin: padding;\
-              subcontrol-position: left;\
              }" );
 #endif
     setTabBar( &myTabBar_ );
+
+    // Put the status icon opposite the close button. Asking the style where
+    // the close button goes, rather than assuming, keeps the two apart on
+    // platforms that close on the left (macOS): setTabButton() on the side
+    // the close button occupies would replace it.
+    const int closeSide = myTabBar_.style()->styleHint(
+            QStyle::SH_TabBar_CloseButtonPosition, nullptr, &myTabBar_ );
+
+    iconSide_ = ( closeSide == QTabBar::LeftSide )
+        ? QTabBar::RightSide : QTabBar::LeftSide;
+
     myTabBar_.hide();
 
 }
@@ -81,7 +94,8 @@ int TabbedCrawlerWidget::addTab( QWidget* page, const QString& label )
     QLabel* icon_label = new QLabel();
     icon_label->setPixmap( olddata_icon_.pixmap( 11, 12 ) );
     icon_label->setAlignment( Qt::AlignCenter );
-    myTabBar_.setTabButton( index, QTabBar::RightSide, icon_label );
+    icon_label->setToolTip( tr("Status of the data in this tab") );
+    myTabBar_.setTabButton( index, iconSide_, icon_label );
 
     LOG(logDEBUG) << "addTab, count = " << count();
     LOG(logDEBUG) << "width = " << olddata_icon_.pixmap( 11, 12 ).devicePixelRatio();
@@ -154,25 +168,31 @@ void TabbedCrawlerWidget::setTabDataStatus( int index, DataStatus status )
     LOG(logDEBUG) << "TabbedCrawlerWidget::setTabDataStatus " << index;
 
     QLabel* icon_label = dynamic_cast<QLabel*>(
-            myTabBar_.tabButton( index, QTabBar::RightSide ) );
+            myTabBar_.tabButton( index, iconSide_ ) );
 
     if ( icon_label ) {
         const QIcon* icon;
+        QString tooltip;
         switch ( status ) {
             case DataStatus::OLD_DATA:
                 icon = &olddata_icon_;
+                tooltip = tr("No new data since this tab was last looked at");
                 break;
             case DataStatus::NEW_DATA:
                 icon = &newdata_icon_;
+                tooltip = tr("New data has been appended to this file");
                 break;
             case DataStatus::NEW_FILTERED_DATA:
                 icon = &newfiltered_icon_;
+                tooltip = tr("New data matching the current search has been "
+                        "appended to this file");
                 break;
         default:
             return;
         }
 
         icon_label->setPixmap ( icon->pixmap(12,12) );
+        icon_label->setToolTip( tooltip );
 
     }
 }

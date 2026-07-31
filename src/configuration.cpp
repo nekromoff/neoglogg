@@ -18,10 +18,13 @@
  */
 
 #include <QFontInfo>
+#include <QThread>
 
 #include "log.h"
 
 #include "configuration.h"
+
+const unsigned Configuration::maxSearchThreads;
 
 Configuration::Configuration()
 {
@@ -46,6 +49,10 @@ Configuration::Configuration()
     lineNumbersVisibleInMain_     = false;
     lineNumbersVisibleInFiltered_ = true;
     lineWrap_                     = false;
+    darkMode_                     = false;
+
+    // 0 means "as many as the machine can usefully run"
+    searchThreads_                = 0;
 
     QFontInfo fi(mainFont_);
     LOG(logDEBUG) << "Default font is " << fi.family().toStdString();
@@ -65,6 +72,21 @@ void Configuration::setMainFont( QFont newFont )
     LOG(logDEBUG) << "Configuration::setMainFont";
 
     mainFont_ = newFont;
+}
+
+unsigned Configuration::searchThreadCount() const
+{
+    if ( searchThreads_ > 0 )
+        return qMin( searchThreads_, maxSearchThreads );
+
+    // Automatic: one worker per core. The search is dominated by regexp
+    // matching, which is pure CPU, so there is nothing to gain from
+    // oversubscribing.
+    const int ideal = QThread::idealThreadCount();
+
+    return ( ideal > 0 )
+        ? qMin( static_cast<unsigned>( ideal ), maxSearchThreads )
+        : 1;
 }
 
 void Configuration::retrieveFromStorage( QSettings& settings )
@@ -107,6 +129,14 @@ void Configuration::retrieveFromStorage( QSettings& settings )
             settings.value( "view.lineNumbersVisibleInFiltered" ).toBool();
     if ( settings.contains( "view.lineWrap" ) )
         lineWrap_ = settings.value( "view.lineWrap" ).toBool();
+    if ( settings.contains( "view.darkMode" ) )
+        darkMode_ = settings.value( "view.darkMode" ).toBool();
+
+    // Search settings
+    if ( settings.contains( "search.threads" ) ) {
+        const unsigned threads = settings.value( "search.threads" ).toUInt();
+        searchThreads_ = qMin( threads, maxSearchThreads );
+    }
 
     // Some sanity check (mainly for people upgrading)
     if ( quickfindIncremental_ )
@@ -138,6 +168,8 @@ void Configuration::saveToStorage( QSettings& settings ) const
     settings.setValue( "view.lineNumbersVisibleInMain", lineNumbersVisibleInMain_ );
     settings.setValue( "view.lineNumbersVisibleInFiltered", lineNumbersVisibleInFiltered_ );
     settings.setValue( "view.lineWrap", lineWrap_ );
+    settings.setValue( "view.darkMode", darkMode_ );
+    settings.setValue( "search.threads", searchThreads_ );
     settings.setValue( "defaultView.searchAutoRefresh", searchAutoRefresh_ );
     settings.setValue( "defaultView.searchIgnoreCase", searchIgnoreCase_ );
 }

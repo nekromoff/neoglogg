@@ -50,6 +50,7 @@
 #include "menuactiontooltipbehavior.h"
 #include "tabbedcrawlerwidget.h"
 #include "externalcom.h"
+#include "theme.h"
 
 // Returns the size in human readable format
 static QString readableSize( qint64 size );
@@ -457,10 +458,15 @@ void MainWindow::open()
         defaultDir = fileInfo.path();
     }
 
-    QString fileName = QFileDialog::getOpenFileName(this,
+    // Several files can be picked at once; each gets its own tab, in the
+    // order the dialog returns them.
+    QStringList fileNames = QFileDialog::getOpenFileNames(this,
             tr("Open file"), defaultDir, tr("All files (*)"));
-    if (!fileName.isEmpty())
-        loadFile(fileName);
+
+    foreach ( const QString& fileName, fileNames ) {
+        if (!fileName.isEmpty())
+            loadFile(fileName);
+    }
 }
 
 // Opens a log file from the recent files list
@@ -535,8 +541,20 @@ void MainWindow::options()
 {
     OptionsDialog dialog(this);
     signalMux_.connect(&dialog, SIGNAL( optionsChanged() ), SLOT( applyConfiguration() ));
+    // The colour scheme is application-wide, so it is ours to apply rather
+    // than each crawler's.
+    connect(&dialog, SIGNAL( optionsChanged() ),
+            this, SLOT( applyThemeConfiguration() ));
     dialog.exec();
     signalMux_.disconnect(&dialog, SIGNAL( optionsChanged() ), SLOT( applyConfiguration() ));
+}
+
+void MainWindow::applyThemeConfiguration()
+{
+    std::shared_ptr<Configuration> config =
+        Persistent<Configuration>( "settings" );
+
+    Theme::apply( config->isDarkModeEnabled() );
 }
 
 // Opens the 'About' dialog box.
@@ -548,8 +566,11 @@ void MainWindow::about()
 #ifdef NEOGLOGG_COMMIT
                 "<p>Built " NEOGLOGG_DATE " from " NEOGLOGG_COMMIT
 #endif
+                "<p>neoglogg by Daniel Duris, based on glogg by Nicolas Bonnefon."
                 "<p><a href=\"http://glogg.bonnefon.org/\">http://glogg.bonnefon.org/</a></p>"
-                "<p>Copyright &copy; 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016 Nicolas Bonnefon and other contributors"
+                "<p>Copyright &copy; 2009&ndash;2018 Nicolas Bonnefon and other contributors"
+                "<br/>Copyright &copy; 2026+ Daniel Duris, "
+                "<a href=\"mailto:dusoft@staznosti.sk\">dusoft@staznosti.sk</a>"
                 "<p>You may modify and redistribute the program under the terms of the GPL (version 3 or later)." ) );
 }
 

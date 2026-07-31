@@ -42,6 +42,7 @@ using namespace std;
 #include "mainwindow.h"
 #include "savedsearches.h"
 #include "loadingstatus.h"
+#include "theme.h"
 
 #include "externalcom.h"
 
@@ -250,6 +251,10 @@ int main(int argc, char *argv[])
 
     // FIXME: should be replaced by a two staged init of MainWindow
     GetPersistentInfo().retrieve( QString( "settings" ) );
+
+    // Apply the colour scheme before any widget is built, so nothing is
+    // created with the wrong palette and has to be repainted.
+    Theme::apply( Persistent<Configuration>( "settings" )->isDarkModeEnabled() );
 
     std::unique_ptr<Session> session( new Session() );
     MainWindow mw( std::move( session ), externalCommunicator );

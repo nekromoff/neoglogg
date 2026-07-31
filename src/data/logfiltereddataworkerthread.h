@@ -22,10 +22,13 @@
 
 #include <QObject>
 #include <QThread>
+#include <QThreadPool>
 #include <QMutex>
 #include <QWaitCondition>
 #include <QRegularExpression>
 #include <QList>
+
+#include <vector>
 
 class LogData;
 
@@ -68,7 +71,11 @@ class SearchData
     // (the matches are always moved)
     void setAll( int length, SearchResultArray&& matches );
     // Atomically add to all the existing search data.
-    void addAll( int length, const SearchResultArray& matches, LineNumber nbLinesProcessed );
+    // The matches must be sorted and start after the last match already
+    // stored, so that the result array stays sorted (it is looked up by
+    // bisection). nbLinesProcessed is the number of lines searched so far,
+    // counted from the start of the file, with no gaps.
+    void addAll( int length, const SearchResultArray& matches, qint64 nbLinesProcessed );
     // Get the number of matches
     LineNumber getNbMatches() const;
     // Delete the match for the passed line (if it exist)
@@ -81,7 +88,45 @@ class SearchData
 
     SearchResultArray matches_;
     int maxLength_;
-    LineNumber nbLinesProcessed_;
+    qint64 nbLinesProcessed_;
+};
+
+// One contiguous range of lines, searched by a single worker.
+// The worker fills in the results; the ranges are merged back in order
+// so that the final match list stays sorted.
+struct SearchChunk
+{
+    qint64 firstLine;
+    int    nbLines;
+
+    SearchResultArray matches;
+    int  maxLength;
+    // False if the worker gave up because the search was interrupted, in
+    // which case this chunk and everything after it must not be committed.
+    bool completed;
+};
+
+// The range of lines a search is restricted to. Both bounds are inclusive
+// and zero-based. A default-constructed range covers the whole file, and
+// keeps covering it as the file grows.
+struct SearchRange
+{
+    SearchRange() : firstLine( 0 ), lastLine( -1 ) {}
+    SearchRange( qint64 first, qint64 last )
+        : firstLine( first ), lastLine( last ) {}
+
+    bool hasUpperBound() const { return lastLine >= 0; }
+
+    // Number of lines of the file this range actually covers, given how
+    // many lines the file has right now.
+    qint64 endLine( qint64 nbFileLines ) const
+    {
+        return hasUpperBound() ? qMin( lastLine + 1, nbFileLines ) : nbFileLines;
+    }
+
+    qint64 firstLine;
+    // Negative means "no upper bound".
+    qint64 lastLine;
 };
 
 class SearchOperation : public QObject
@@ -89,7 +134,8 @@ class SearchOperation : public QObject
   Q_OBJECT
   public:
     SearchOperation(const LogData* sourceLogData,
-            const QRegularExpression &regExp, bool* interruptRequest );
+            const QRegularExpression &regExp, bool* interruptRequest,
+            QThreadPool* threadPool, const SearchRange& range );
 
     virtual ~SearchOperation() { }
 
@@ -110,14 +156,27 @@ class SearchOperation : public QObject
     bool* interruptRequested_;
     const QRegularExpression regexp_;
     const LogData* sourceLogData_;
+    const SearchRange range_;
+
+  private:
+    // Search one batch of chunks, spreading them over the thread pool and
+    // blocking until they are all done.
+    void searchChunksInParallel( std::vector<SearchChunk>& chunks );
+    // Same, done inline in the calling thread. Used for batches too small
+    // to be worth dispatching.
+    void searchChunksInline( std::vector<SearchChunk>& chunks );
+
+    QThreadPool* threadPool_;
 };
 
 class FullSearchOperation : public SearchOperation
 {
   public:
     FullSearchOperation( const LogData* sourceLogData, const QRegularExpression& regExp,
-            bool* interruptRequest )
-        : SearchOperation( sourceLogData, regExp, interruptRequest ) {}
+            bool* interruptRequest, QThreadPool* threadPool,
+            const SearchRange& range )
+        : SearchOperation( sourceLogData, regExp, interruptRequest, threadPool,
+                range ) {}
     virtual void start( SearchData& result );
 };
 
@@ -125,8 +184,10 @@ class UpdateSearchOperation : public SearchOperation
 {
   public:
     UpdateSearchOperation( const LogData* sourceLogData, const QRegularExpression& regExp,
-            bool* interruptRequest, qint64 position )
-        : SearchOperation( sourceLogData, regExp, interruptRequest ),
+            bool* interruptRequest, QThreadPool* threadPool,
+            const SearchRange& range, qint64 position )
+        : SearchOperation( sourceLogData, regExp, interruptRequest, threadPool,
+                range ),
         initialPosition_( position ) {}
     virtual void start( SearchData& result );
 
@@ -147,11 +208,16 @@ class LogFilteredDataWorkerThread : public QThread
     LogFilteredDataWorkerThread( const LogData* sourceLogData );
     ~LogFilteredDataWorkerThread();
 
-    // Start the search with the passed regexp
-    void search(const QRegularExpression &regExp );
+    // Start the search with the passed regexp, restricted to the passed
+    // range of lines
+    void search(const QRegularExpression &regExp, const SearchRange& range );
+    // Number of workers the searches will be spread over. Read from the
+    // configuration; must be called from the thread owning this object.
+    void updateSearchThreadCount();
     // Continue the previous search starting at the passed position
     // in the source file (line number)
-    void updateSearch( const QRegularExpression& regExp, qint64 position );
+    void updateSearch( const QRegularExpression& regExp,
+            const SearchRange& range, qint64 position );
     // Interrupts the search if one is in progress
     void interrupt();
 
@@ -182,6 +248,12 @@ class LogFilteredDataWorkerThread : public QThread
     bool terminate_;
     bool interruptRequested_;
     SearchOperation* operationRequested_;
+
+    // Workers the search chunks are spread over. Owned here rather than by
+    // the operation so that the threads survive between searches, which
+    // matters in follow mode where a small update search runs on every
+    // append.
+    QThreadPool searchThreadPool_;
 
     // Shared indexing data
     SearchData searchData_;

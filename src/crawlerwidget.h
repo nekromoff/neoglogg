@@ -29,6 +29,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QLineEdit>
 
 #include "logmainview.h"
 #include "filteredview.h"
@@ -138,6 +139,11 @@ class CrawlerWidget : public QSplitter,
     void startNewSearch();
     // Stop the currently ongoing search (if one exists)
     void stopSearch();
+    // The button next to the search line. Stops the search while one is
+    // running, and clears the search text and its results otherwise.
+    void stopOrClearSearch();
+    // Clear the search line and everything the last search produced.
+    void clearSearch();
     // Instructs the widget to reconfigure itself because Config() has changed.
     void applyConfiguration();
     // QuickFind is being entered, save the focus for incremental qf.
@@ -165,6 +171,9 @@ class CrawlerWidget : public QSplitter,
 
     // Called when the checkbox for search auto-refresh is changed
     void searchRefreshChangedHandler( int state );
+
+    // Called when the "limit to lines" checkbox is changed
+    void searchRangeChangedHandler( int state );
 
     // Called when the text on the search line is modified
     void searchTextChangeHandler();
@@ -228,6 +237,10 @@ class CrawlerWidget : public QSplitter,
     void updateSearchCombo();
     AbstractLogView* activeView() const;
     void printSearchInfoMessage( int nbMatches = 0 );
+    void updateStopClearButton();
+    // Build the line range from the two edit boxes, or an unrestricted
+    // range if the user has not asked for one.
+    SearchRange currentSearchRange() const;
     void changeDataStatus( DataStatus status );
     void updateEncoding();
     void changeTopViewSize( int32_t delta );
@@ -246,6 +259,12 @@ class CrawlerWidget : public QSplitter,
     InfoLine*       searchInfoLine;
     QCheckBox*      ignoreCaseCheck;
     QCheckBox*      searchRefreshCheck;
+
+    // Restricting the search to a range of lines
+    QCheckBox*      searchRangeCheck;
+    QLabel*         searchRangeToLabel;
+    QLineEdit*      searchRangeFromEdit;
+    QLineEdit*      searchRangeToEdit;
     OverviewWidget* overviewWidget_;
 
     QVBoxLayout*    bottomMainLayout;
@@ -288,6 +307,10 @@ class CrawlerWidget : public QSplitter,
 
     // Current number of matches
     int             nbMatches_;
+
+    // Is a search running right now? Decides whether the button next to the
+    // search line stops or clears.
+    bool            searchInProgress_ = false;
 
     // the current dataStatus (whether we have new, not seen, data)
     DataStatus      dataStatus_;

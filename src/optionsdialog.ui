@@ -90,6 +90,34 @@
         </widget>
        </item>
        <item>
+        <widget class="QGroupBox" name="appearanceBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="title">
+          <string>Appearance</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_7">
+          <item>
+           <widget class="QCheckBox" name="darkModeCheckBox">
+            <property name="layoutDirection">
+             <enum>Qt::LeftToRight</enum>
+            </property>
+            <property name="text">
+             <string>Dark mode</string>
+            </property>
+            <property name="toolTip">
+             <string>Use a dark colour scheme for the whole application, including the log views. Applies immediately.</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
         <widget class="QGroupBox" name="searchBox">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -137,6 +165,29 @@
               </property>
              </widget>
             </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_6">
+              <property name="text">
+               <string>Search threads: </string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QSpinBox" name="searchThreadsSpinBox">
+              <property name="specialValueText">
+               <string>Automatic</string>
+              </property>
+              <property name="minimum">
+               <number>0</number>
+              </property>
+              <property name="maximum">
+               <number>64</number>
+              </property>
+              <property name="toolTip">
+               <string>How many threads a search is spread over. Automatic uses one per processor core, which is almost always the right answer. Takes effect on the next search.</string>
+              </property>
+             </widget>
+            </item>
             <item row="4" column="1">
              <widget class="QCheckBox" name="incrementalCheckBox">
               <property name="layoutDirection">
@@ -144,6 +195,9 @@
               </property>
               <property name="text">
                <string>Incremental QuickFind</string>
+              </property>
+              <property name="toolTip">
+               <string>Jump to matches as you type in the QuickFind bar, rather than waiting for Enter.</string>
               </property>
              </widget>
             </item>
@@ -160,8 +214,14 @@
          <layout class="QVBoxLayout" name="verticalLayout_6">
           <item>
            <widget class="QCheckBox" name="loadLastSessionCheckBox">
+            <property name="layoutDirection">
+             <enum>Qt::LeftToRight</enum>
+            </property>
             <property name="text">
              <string>Load last session</string>
+            </property>
+            <property name="toolTip">
+             <string>Re-open the files that were open when the application was last closed.</string>
             </property>
            </widget>
           </item>
@@ -199,8 +259,14 @@
          <layout class="QVBoxLayout" name="verticalLayout">
           <item>
            <widget class="QCheckBox" name="pollingCheckBox">
+            <property name="layoutDirection">
+             <enum>Qt::LeftToRight</enum>
+            </property>
             <property name="text">
              <string>Enable Polling</string>
+            </property>
+            <property name="toolTip">
+             <string>Check files for changes on a timer as well as relying on the operating system's notifications. Needed for files on network shares, where notifications are unreliable.</string>
             </property>
            </widget>
           </item>

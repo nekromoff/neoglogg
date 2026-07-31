@@ -176,6 +176,15 @@ void OptionsDialog::updateDialogFromConfig()
 
     // Last session
     loadLastSessionCheckBox->setChecked( config->loadLastSession() );
+
+    // Appearance
+    darkModeCheckBox->setChecked( config->isDarkModeEnabled() );
+
+    // Search threads (0 shows as "Automatic")
+    searchThreadsSpinBox->setMaximum(
+            static_cast<int>( Configuration::maxSearchThreads ) );
+    searchThreadsSpinBox->setValue(
+            static_cast<int>( config->searchThreads() ) );
 }
 
 //
@@ -224,6 +233,11 @@ void OptionsDialog::updateConfigFromDialog()
     config->setPollIntervalMs( poll_interval );
 
     config->setLoadLastSession( loadLastSessionCheckBox->isChecked() );
+
+    config->setDarkModeEnabled( darkModeCheckBox->isChecked() );
+    config->setSearchThreads(
+            static_cast<unsigned>( searchThreadsSpinBox->value() ) );
+
     emit optionsChanged();
 }
 
