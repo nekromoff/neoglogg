@@ -44,8 +44,9 @@ OptionsDialog::OptionsDialog( QWidget* parent ) : QDialog(parent)
 
     connect(buttonBox, SIGNAL( clicked( QAbstractButton* ) ),
             this, SLOT( onButtonBoxClicked( QAbstractButton* ) ) );
-    connect(fontFamilyBox, SIGNAL( currentIndexChanged(const QString& ) ),
-            this, SLOT( updateFontSize( const QString& ) ));
+    // The QString overload of currentIndexChanged is gone in Qt 6
+    connect(fontFamilyBox, &QComboBox::currentTextChanged,
+            this, &OptionsDialog::updateFontSize);
     connect(incrementalCheckBox, SIGNAL( toggled( bool ) ),
             this, SLOT( onIncrementalChanged() ) );
     connect(pollingCheckBox, SIGNAL( toggled( bool ) ),
@@ -72,11 +73,9 @@ void OptionsDialog::setupTabs()
 // Populates the 'family' ComboBox
 void OptionsDialog::setupFontList()
 {
-    QFontDatabase database;
-
     // We only show the fixed fonts
-    foreach ( const QString &str, database.families() ) {
-         if ( database.isFixedPitch( str ) )
+    foreach ( const QString &str, QFontDatabase::families() ) {
+         if ( QFontDatabase::isFixedPitch( str ) )
              fontFamilyBox->addItem( str );
      }
 }
@@ -193,9 +192,8 @@ void OptionsDialog::updateDialogFromConfig()
 
 void OptionsDialog::updateFontSize(const QString& fontFamily)
 {
-    QFontDatabase database;
     QString oldFontSize = fontSizeBox->currentText();
-    QList<int> sizes = database.pointSizes( fontFamily, "" );
+    QList<int> sizes = QFontDatabase::pointSizes( fontFamily, "" );
 
     fontSizeBox->clear();
     foreach (int size, sizes) {

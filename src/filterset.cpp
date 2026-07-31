@@ -30,8 +30,7 @@ const int FilterSet::FILTERSET_VERSION = 1;
 QRegularExpression::PatternOptions getPatternOptions( bool ignoreCase )
 {
     QRegularExpression::PatternOptions options =
-            QRegularExpression::UseUnicodePropertiesOption
-            | QRegularExpression::OptimizeOnFirstUsageOption;
+            QRegularExpression::UseUnicodePropertiesOption;
 
     if ( ignoreCase ) {
         options |= QRegularExpression::CaseInsensitiveOption;
@@ -126,9 +125,11 @@ QDataStream& operator>>( QDataStream& in, Filter& object )
 // Default constructor
 FilterSet::FilterSet()
 {
-    qRegisterMetaTypeStreamOperators<Filter>( "Filter" );
-    qRegisterMetaTypeStreamOperators<FilterSet>( "FilterSet" );
-    qRegisterMetaTypeStreamOperators<FilterSet::FilterList>( "FilterSet::FilterList" );
+    // Qt 6 registers the QDataStream operators automatically with the
+    // metatype; qRegisterMetaTypeStreamOperators no longer exists.
+    qRegisterMetaType<Filter>( "Filter" );
+    qRegisterMetaType<FilterSet>( "FilterSet" );
+    qRegisterMetaType<FilterSet::FilterList>( "FilterSet::FilterList" );
 }
 
 bool FilterSet::matchLine( const QString& line,

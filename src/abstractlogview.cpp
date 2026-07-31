@@ -162,9 +162,9 @@ inline void LineDrawer::draw( QPainter& painter,
     QFontMetrics fm = painter.fontMetrics();
     const int fontHeight = fm.height();
     const int fontAscent = fm.ascent();
-    // For some reason on Qt 4.8.2 for Win, maxWidth() is wrong but the
-    // following give the right result, not sure why:
-    const int fontWidth = fm.width( QChar('a') );
+    // maxWidth() has been unreliable on Windows in the past; measuring an
+    // actual character gives the right result (the font is mono-space):
+    const int fontWidth = fm.horizontalAdvance( QChar('a') );
 
     int xPos = initialXPos;
     int yPos = initialYPos;
@@ -1110,9 +1110,9 @@ void AbstractLogView::updateDisplaySize()
     // Font is assumed to be mono-space (is restricted by options dialog)
     QFontMetrics fm = fontMetrics();
     charHeight_ = fm.height();
-    // For some reason on Qt 4.8.2 for Win, maxWidth() is wrong but the
-    // following give the right result, not sure why:
-    charWidth_ = fm.width( QChar('a') );
+    // maxWidth() has been unreliable on Windows in the past; measuring an
+    // actual character gives the right result (the font is mono-space):
+    charWidth_ = fm.horizontalAdvance( QChar('a') );
 
     // Update the scroll bars
     updateScrollBars();
@@ -1686,8 +1686,9 @@ void AbstractLogView::drawTextArea( QPaintDevice* paint_device, int32_t )
 
         while ( ( rowsFetched < rowsNeeded )
                 && ( lines.count() < maxNbLines ) ) {
-            const int chunk = static_cast<int>( std::min(
-                    static_cast<int64_t>( 8 ), maxNbLines - lines.count() ) );
+            // lines.count() returns qsizetype in Qt 6
+            const int chunk = static_cast<int>( std::min<int64_t>(
+                    8, maxNbLines - lines.count() ) );
             const QStringList chunkLines = logData->getExpandedLines(
                     firstLine + lines.count(), chunk );
             foreach ( const QString& l, chunkLines ) {
@@ -1735,9 +1736,12 @@ void AbstractLogView::drawTextArea( QPaintDevice* paint_device, int32_t )
                           contentStartPosX + lineNumberAreaWidth,
                           viewport()->height() );
         */
+        // The gutter takes the theme's window colour (grey-ish in the light
+        // theme, dark grey in dark mode) so the numbers, drawn in
+        // WindowText, stay readable in both.
         painter.fillRect( contentStartPosX - SEPARATOR_WIDTH, 0,
                           lineNumberAreaWidth + SEPARATOR_WIDTH, paintDeviceHeight,
-                          Qt::lightGray );
+                          palette.color( QPalette::Window ) );
 
         // Update for drawing the actual text
         contentStartPosX += lineNumberAreaWidth;
@@ -1745,7 +1749,7 @@ void AbstractLogView::drawTextArea( QPaintDevice* paint_device, int32_t )
     else {
         painter.fillRect( contentStartPosX - SEPARATOR_WIDTH, 0,
                           SEPARATOR_WIDTH + 1, paintDeviceHeight,
-                          Qt::lightGray );
+                          palette.color( QPalette::Window ) );
         // contentStartPosX += SEPARATOR_WIDTH;
     }
 
@@ -1933,7 +1937,8 @@ void AbstractLogView::drawTextArea( QPaintDevice* paint_device, int32_t )
             const QString& lineNumberStr =
                 lineNumberFormat.arg( displayLineNumber( line_index ),
                         nbDigitsInLineNumber );
-            painter.setPen( palette.color( QPalette::Text ) );
+            // WindowText, to pair with the QPalette::Window gutter behind it
+            painter.setPen( palette.color( QPalette::WindowText ) );
             painter.drawText( lineNumberAreaStartX + LINE_NUMBER_PADDING,
                     yPos + fontAscent, lineNumberStr );
         }

@@ -93,12 +93,13 @@ Section "neoglogg" neoglogg
     WriteUninstaller "$INSTDIR\Uninstall.exe"
 SectionEnd
 
-Section "Qt5 Runtime libraries" qtlibs
+Section "Qt6 Runtime libraries" qtlibs
     SetOutPath $INSTDIR
-    File release\Qt5Core.dll
-    File release\Qt5Gui.dll
-    File release\Qt5Network.dll
-    File release\Qt5Widgets.dll
+    File release\Qt6Core.dll
+    File release\Qt6Gui.dll
+    File release\Qt6Network.dll
+    File release\Qt6Widgets.dll
+    File release\Qt6Core5Compat.dll
     File release\libwinpthread-1.dll
     SetOutPath $INSTDIR\platforms
     File release\qwindows.dll
@@ -117,7 +118,7 @@ SectionEnd
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
     !insertmacro MUI_DESCRIPTION_TEXT ${neoglogg} "The core files required to use neoglogg."
     !insertmacro MUI_DESCRIPTION_TEXT ${qtlibs} "Needed by neoglogg, you have to install these unless \
-you already have the Qt5 development kit installed."
+you already have the Qt6 development kit installed."
     !insertmacro MUI_DESCRIPTION_TEXT ${shortcut} "Create a shortcut in the Start menu for neoglogg."
     !insertmacro MUI_DESCRIPTION_TEXT ${associate} "Make neoglogg the default viewer for .log files."
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
@@ -130,15 +131,11 @@ Section "Uninstall"
     Delete "$INSTDIR\README"
     Delete "$INSTDIR\README.md"
     Delete "$INSTDIR\COPYING"
-    Delete "$INSTDIR\mingwm10.dll"
-    Delete "$INSTDIR\libgcc_s_dw2-1.dll"
-    Delete "$INSTDIR\QtCore4.dll"
-    Delete "$INSTDIR\QtGui4.dll"
-    Delete "$INSTDIR\QtNetwork4.dll"
-    Delete "$INSTDIR\Qt5Core.dll"
-    Delete "$INSTDIR\Qt5Gui.dll"
-    Delete "$INSTDIR\Qt5Network.dll"
-    Delete "$INSTDIR\Qt5Widgets.dll"
+    Delete "$INSTDIR\Qt6Core.dll"
+    Delete "$INSTDIR\Qt6Gui.dll"
+    Delete "$INSTDIR\Qt6Network.dll"
+    Delete "$INSTDIR\Qt6Widgets.dll"
+    Delete "$INSTDIR\Qt6Core5Compat.dll"
     Delete "$INSTDIR\libwinpthread-1.dll"
     Delete "$INSTDIR\platforms\qwindows.dll"
     RMDir "$INSTDIR"

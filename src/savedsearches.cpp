@@ -30,7 +30,8 @@ const int SavedSearches::maxNumberOfRecentSearches = 50;
 
 SavedSearches::SavedSearches() : savedSearches_()
 {
-    qRegisterMetaTypeStreamOperators<SavedSearches>( "SavedSearches" );
+    // Qt 6 finds the QDataStream operators automatically
+    qRegisterMetaType<SavedSearches>( "SavedSearches" );
 }
 
 void SavedSearches::addRecent( const QString& text )

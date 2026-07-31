@@ -43,7 +43,7 @@ QuickFindWidget::QuickFindWidget( QWidget* parent ) : QWidget( parent )
     // setProperty("topBorder", true);
     QHBoxLayout *layout = new QHBoxLayout( this );
 
-    layout->setMargin( 0 );
+    layout->setContentsMargins( 0, 0, 0, 0 );
     layout->setSpacing( 6 );
 
     closeButton_ = setupToolButton(

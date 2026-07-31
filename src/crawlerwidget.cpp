@@ -446,10 +446,8 @@ void CrawlerWidget::applyConfiguration()
     // Whatever font we use, we should NOT use kerning
     font.setKerning( false );
     font.setFixedPitch( true );
-#if QT_VERSION > 0x040700
-    // Necessary on systems doing subpixel positionning (e.g. Ubuntu 12.04)
-    font.setStyleStrategy( QFont::ForceIntegerMetrics );
-#endif
+    // QFont::ForceIntegerMetrics is gone in Qt 6; the view already rounds
+    // the char width itself when computing the layout.
     logMainView->setFont(font);
     filteredView->setFont(font);
 
@@ -795,7 +793,7 @@ void CrawlerWidget::setup()
 
     // The line number boxes only need to be as wide as a line number
     const int rangeEditWidth =
-        searchRangeFromEdit->fontMetrics().width( "0000000" );
+        searchRangeFromEdit->fontMetrics().horizontalAdvance( "0000000" );
     searchRangeFromEdit->setMaximumWidth( rangeEditWidth );
     searchRangeToEdit->setMaximumWidth( rangeEditWidth );
 
@@ -1013,9 +1011,10 @@ void CrawlerWidget::replaceCurrentSearch( const QString& searchText )
         }
 
         // Set the pattern case insensitive if needed
+        // OptimizeOnFirstUsageOption disappeared in Qt 6, patterns are
+        // always optimized.
         QRegularExpression::PatternOptions patternOptions =
-                QRegularExpression::UseUnicodePropertiesOption
-                | QRegularExpression::OptimizeOnFirstUsageOption;
+                QRegularExpression::UseUnicodePropertiesOption;
 
         if ( ignoreCaseCheck->checkState() == Qt::Checked )
             patternOptions |= QRegularExpression::CaseInsensitiveOption;

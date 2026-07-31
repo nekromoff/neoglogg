@@ -1,6 +1,6 @@
 #!/bin/sh
 
-./tests/logcrawler_tests $*
+./tests/build/neoglogg_tests $*
 result=$?
 
 ICON_OK=gtk-apply

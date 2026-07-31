@@ -2,15 +2,14 @@ INCLUDE (CheckSymbolExists)
 INCLUDE (CheckCXXSourceCompiles)
 INCLUDE (CheckCXXCompilerFlag)
 
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.16)
 project(neoglogg_tests)
 
 # Qt
 
-find_program(QT_QMAKE_EXECUTABLE NAMES qmake PATHS $ENV{QT_DIR}/bin)
-find_package(Qt5Core 5.8 REQUIRED)
-find_package(Qt5Widgets 5.8 REQUIRED)
-find_package(Qt5Test 5.8 REQUIRED)
+find_program(QT_QMAKE_EXECUTABLE NAMES qmake6 qmake PATHS $ENV{QT_DIR}/bin)
+# Core5Compat provides QTextCodec, used by the log data classes
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Test Core5Compat)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -22,18 +21,11 @@ if(HAS_WALL)
     set(PARANOID_FLAGS "${PARANOID_FLAGS} -Wall")
 endif(HAS_WALL)
 
-# Compiler
-check_cxx_compiler_flag("-std=c++11" COMPILER_SUPPORTS_CXX11)
-check_cxx_compiler_flag("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-elseif(COMPILER_SUPPORTS_CXX0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-else()
-    message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support.")
-endif()
+# Compiler (C++17 required by Qt 6 and the main build)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_REQUIRED_FLAGS "-std=c++11")
+set(CMAKE_REQUIRED_FLAGS "-std=c++17")
 check_cxx_source_compiles("
     #include <memory>
     int main(int, int)
@@ -172,7 +164,7 @@ add_executable(neoglogg_tests
 )
 
 # Link test executable against gtest & gtest_main
-target_link_libraries(neoglogg_tests ${LIBS} gtest_main pthread Qt5::Widgets)
+target_link_libraries(neoglogg_tests ${LIBS} gtest_main pthread Qt6::Widgets Qt6::Core5Compat)
 
 add_executable(neoglogg_itests
     ${neoglogg_SOURCES}
@@ -181,7 +173,7 @@ add_executable(neoglogg_itests
     itests.cpp
 )
 
-target_link_libraries(neoglogg_itests ${LIBS} pthread Qt5::Widgets Qt5::Test)
+target_link_libraries(neoglogg_itests ${LIBS} pthread Qt6::Widgets Qt6::Core5Compat Qt6::Test)
 
 add_executable(neoglogg_ptests
     ${neoglogg_SOURCES}
@@ -190,7 +182,7 @@ add_executable(neoglogg_ptests
     itests.cpp
 )
 
-target_link_libraries(neoglogg_ptests ${LIBS} pthread Qt5::Widgets Qt5::Test)
+target_link_libraries(neoglogg_ptests ${LIBS} pthread Qt6::Widgets Qt6::Core5Compat Qt6::Test)
 
 add_test(
     NAME neoglogg_tests

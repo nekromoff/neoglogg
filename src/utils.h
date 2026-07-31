@@ -128,19 +128,9 @@ LineNumber lookupLineNumber( Iterator begin, Iterator end, LineNumber lineNum )
     return lineIndex;
 }
 
-#ifndef HAVE_MAKE_UNIQUE
-#include <memory>
-
-namespace std {
-template<typename T, typename... Args>
-std::unique_ptr<T> make_unique(Args&&... args) {
-        return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
-}
-#endif
-
-#ifndef HAVE_OVERRIDE
-#define override
-#endif
+// The C++11-era backports of std::make_unique and the 'override' keyword
+// that used to live here are gone: the project requires C++17 (for Qt 6),
+// where both always exist. The backport of make_unique in namespace std
+// actually broke the build by being ambiguous with the real one.
 
 #endif

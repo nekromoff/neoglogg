@@ -25,7 +25,8 @@
 #include <cassert>
 
 #include <QAction>
-#include <QDesktopWidget>
+#include <QActionGroup>
+#include <QScreen>
 #include <QMenuBar>
 #include <QToolBar>
 #include <QFileInfo>
@@ -76,7 +77,7 @@ MainWindow::MainWindow( std::unique_ptr<Session> session,
     setAcceptDrops( true );
 
     // Default geometry
-    const QRect geometry = QApplication::desktop()->availableGeometry( this );
+    const QRect geometry = screen()->availableGeometry();
     setGeometry( geometry.x() + 20, geometry.y() + 40,
             geometry.width() - 140, geometry.height() - 140 );
 
@@ -762,9 +763,8 @@ void MainWindow::loadFileNonInteractive( const QString& file_name )
     loadFile( file_name );
 
     // Try to get the window to the front
-    // This is a bit of a hack but has been tested on:
-    // Qt 5.3 / Gnome / Linux
-    // Qt 4.8 / Win7
+    // This is a bit of a hack but has been tested on
+    // Gnome/Linux and Windows
 #ifdef _WIN32
     // Hack copied from http://qt-project.org/forums/viewthread/6164
     ::SetWindowPos((HWND) effectiveWinId(), HWND_TOPMOST,

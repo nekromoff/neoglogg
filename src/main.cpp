@@ -243,8 +243,8 @@ int main(int argc, char *argv[])
     AllowSetForegroundWindow(ASFW_ANY);
 #endif
 
-    // We support high-dpi (aka Retina) displays
-    app.setAttribute( Qt::AA_UseHighDpiPixmaps );
+    // High-dpi (aka Retina) displays are always supported in Qt 6,
+    // the old AA_UseHighDpiPixmaps attribute is gone.
 
     // No icon in menus
     app.setAttribute( Qt::AA_DontShowIconsInMenus );

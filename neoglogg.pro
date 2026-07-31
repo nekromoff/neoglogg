@@ -8,9 +8,12 @@
 TARGET = neoglogg
 TEMPLATE = app
 
-QT += network
+QT += core widgets network
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += core widgets
+# QTextCodec (used for the many supported encodings) moved to the
+# Core5Compat module in Qt 6. QStringConverter is not a replacement:
+# it does not know CP1251, Big5, GB18030, Shift_JIS or KOI8-R.
+QT += core5compat
 
 win32:Debug:CONFIG += console
 
@@ -203,7 +206,8 @@ UI_DIR = $${OUT_PWD}/.ui/$${DESTDIR}-shared
 # Debug symbols even in release build
 QMAKE_CXXFLAGS = -g
 
-CONFIG += c++11
+# Qt 6 requires C++17
+CONFIG += c++17
 
 # Extra compiler arguments
 # QMAKE_CXXFLAGS += -Weffc++
@@ -230,7 +234,8 @@ macx {
     QMAKE_CXXFLAGS += -stdlib=libc++
     QMAKE_LFLAGS += -stdlib=libc++
 
-    QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.8
+    # Qt 6 supports macOS 11 and later
+    QMAKE_MACOSX_DEPLOYMENT_TARGET = 11.0
 
     QMAKE_INFO_PLIST = Info.plist
 }
@@ -251,7 +256,9 @@ else {
 }
 
 # Optional features (e.g. CONFIG+=no-dbus)
-system(pkg-config --exists Qt5DBus):!no-dbus {
+# qtHaveModule asks the Qt actually being built against, rather than
+# pkg-config, which probed a fixed Qt version regardless of the Qt in use.
+qtHaveModule(dbus):!no-dbus {
     message("Support for D-BUS will be included")
     QT += dbus
     QMAKE_CXXFLAGS += -DNEOGLOGG_SUPPORTS_DBUS

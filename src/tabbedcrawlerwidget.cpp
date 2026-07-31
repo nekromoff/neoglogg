@@ -82,8 +82,8 @@ int TabbedCrawlerWidget::addTab( QWidget* page, const QString& label )
     int index = QTabWidget::addTab( page, label );
 
     if ( auto crawler = dynamic_cast<CrawlerWidget*>( page ) ) {
-        // Mmmmhhhh... new Qt5 signal syntax create tight coupling between
-        // us and the sender, baaaaad....
+        // Mmmmhhhh... pointer-to-member signal syntax creates tight coupling
+        // between us and the sender, baaaaad....
 
         // Listen for a changing data status:
         connect( crawler, &CrawlerWidget::dataStatusChanged,
@@ -118,7 +118,7 @@ void TabbedCrawlerWidget::mouseReleaseEvent( QMouseEvent *event)
 {
     LOG(logDEBUG) << "TabbedCrawlerWidget::mouseReleaseEvent";
 
-    if (event->button() == Qt::MidButton)
+    if (event->button() == Qt::MiddleButton)
     {
         int tab = this->myTabBar_.tabAt( event->pos() );
         if (-1 != tab)

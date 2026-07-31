@@ -29,6 +29,7 @@
 #include <QList>
 
 #include <vector>
+#include <memory>
 
 class LogData;
 

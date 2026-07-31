@@ -6,9 +6,9 @@
 # brew install node
 # npm install -g appdmg
 #
-# QTDIR is built -static
+# QTDIR is a static Qt 6 build (the Core5Compat module is required)
 
-QTDIR=$HOME/Sandbox/qt-5.8.0-release-static
+QTDIR=$HOME/Sandbox/qt-6-release-static
 BOOSTDIR=$HOME/Sandbox/boost_1_59_0
 
 make clean
@@ -26,6 +26,6 @@ dsymutil release/neoglogg.app/Contents/MacOS/neoglogg
 mv release/neoglogg.app/Contents/MacOS/neoglogg.dSYM release/neoglogg-$VERSION.dSYM
 
 sed -e "s/\"neoglogg\"/\"neoglogg $VERSION\"/" osx_installer.json >osx_${VERSION}_installer.json
-rm neoglogg_${VERSION}_installer.dmg
+rm -f neoglogg_${VERSION}_installer.dmg
 appdmg osx_${VERSION}_installer.json neoglogg_${VERSION}_installer.dmg
 rm osx_${VERSION}_installer.json

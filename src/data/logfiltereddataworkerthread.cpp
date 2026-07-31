@@ -319,19 +319,20 @@ void SearchOperation::searchChunksInline( std::vector<SearchChunk>& chunks )
 void SearchOperation::searchChunksInParallel( std::vector<SearchChunk>& chunks )
 {
     QSemaphore done;
-    std::vector<SearchChunkRunnable> runnables;
 
-    // Reserved so that the runnables never move: the pool holds pointers
-    // to them for as long as they are queued.
+    // QRunnable is not copyable, so the runnables are heap-allocated and
+    // owned here; they must outlive the barrier below, which they do.
+    std::vector<std::unique_ptr<SearchChunkRunnable>> runnables;
     runnables.reserve( chunks.size() );
 
     for ( auto& chunk : chunks ) {
-        runnables.emplace_back( sourceLogData_, regexp_, &chunk,
-                interruptRequested_, &done );
+        runnables.push_back( std::unique_ptr<SearchChunkRunnable>(
+                new SearchChunkRunnable( sourceLogData_, regexp_, &chunk,
+                        interruptRequested_, &done ) ) );
     }
 
     for ( auto& runnable : runnables )
-        threadPool_->start( &runnable );
+        threadPool_->start( runnable.get() );
 
     // Every runnable releases the semaphore exactly once, including the
     // ones that bail out early, so this always comes back.
