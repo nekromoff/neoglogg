@@ -21,6 +21,10 @@
 #define WINWATCHTOWERDRIVER_H
 
 #include <atomic>
+#include <cstddef>
+#include <functional>
+#include <memory>
+#include <string>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
