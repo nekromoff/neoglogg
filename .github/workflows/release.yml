@@ -51,6 +51,29 @@ jobs:
             build-essential debhelper \
             qt6-base-dev qt6-base-dev-tools qt6-5compat-dev libboost-program-options-dev
 
+      # The committed <releases> entry would otherwise advertise the previous
+      # version forever. Replaced with a bare version/date entry: release prose
+      # cannot be generated from a tag, and a wrong description is worse than
+      # none. Only the two Linux jobs install the metainfo.
+      - name: Stamp the AppStream release entry
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          python3 - <<'PYEOF'
+          import os, re, datetime
+          version = os.environ['VERSION']
+          today = datetime.date.today().isoformat()
+          block = ('  <releases>\n'
+                   '    <release version="%s" date="%s"/>\n'
+                   '  </releases>' % (version, today))
+          path = 'neoglogg.metainfo.xml'
+          text = open(path).read()
+          text, n = re.subn(r'  <releases>.*?</releases>', block, text, flags=re.S)
+          assert n == 1, 'no <releases> block found'
+          open(path, 'w').write(text)
+          print(block)
+          PYEOF
+
       # Written directly rather than with dch: the changelog is committed, so
       # dch --create refuses to overwrite it, and dch also wants
       # libdistro-info-perl just to validate the distribution name.
@@ -99,6 +122,29 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             qt6-base-dev qt6-base-dev-tools qt6-5compat-dev libboost-program-options-dev \
             libfuse2 wget file
+
+      # The committed <releases> entry would otherwise advertise the previous
+      # version forever. Replaced with a bare version/date entry: release prose
+      # cannot be generated from a tag, and a wrong description is worse than
+      # none. Only the two Linux jobs install the metainfo.
+      - name: Stamp the AppStream release entry
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          python3 - <<'PYEOF'
+          import os, re, datetime
+          version = os.environ['VERSION']
+          today = datetime.date.today().isoformat()
+          block = ('  <releases>\n'
+                   '    <release version="%s" date="%s"/>\n'
+                   '  </releases>' % (version, today))
+          path = 'neoglogg.metainfo.xml'
+          text = open(path).read()
+          text, n = re.subn(r'  <releases>.*?</releases>', block, text, flags=re.S)
+          assert n == 1, 'no <releases> block found'
+          open(path, 'w').write(text)
+          print(block)
+          PYEOF
 
       - name: Build the AppImage
         run: VERSION="${{ needs.version.outputs.version }}" ./release-appimage.sh
