@@ -16,7 +16,8 @@ Browse and search through long and complex log files. Also described as: A graph
   and KOI8-R, automatic detection support
 * Regex search (PCRE2, via `QRegularExpression`)
 * Fast orientation in the log and search results - highlighted matched lines
-* A fast context view - where in the log the lines
+* Follow file mode
+* Line wrapping for long lines
 * Light / dark mode
 
 ## New in neoglogg
