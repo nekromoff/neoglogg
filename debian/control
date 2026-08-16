@@ -8,6 +8,8 @@ Build-Depends: debhelper-compat (= 13),
                libboost-program-options-dev
 Standards-Version: 4.6.2
 Homepage: https://github.com/nekromoff/neoglogg
+Vcs-Browser: https://github.com/nekromoff/neoglogg
+Vcs-Git: https://github.com/nekromoff/neoglogg.git
 Rules-Requires-Root: no
 
 Package: neoglogg

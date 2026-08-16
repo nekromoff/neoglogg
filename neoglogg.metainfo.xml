@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- AppStream metadata. Software centres (GNOME Software, KDE Discover,
+     elementary AppCenter) read this to show the developer, licence, summary
+     and screenshots; without it a package appears with almost no detail. -->
+<component type="desktop-application">
+  <id>sk.staznosti.neoglogg</id>
+
+  <name>neoglogg</name>
+  <summary>The fast, smart log explorer</summary>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+
+  <developer id="sk.staznosti">
+    <name>Daniel Duris</name>
+  </developer>
+
+  <description>
+    <p>
+      neoglogg is a multi-platform GUI application to browse and search through
+      long or complex log files. It is designed with programmers and system
+      administrators in mind, and can be seen as a graphical, interactive
+      combination of grep and less.
+    </p>
+    <p>
+      Files are streamed from disk rather than loaded into memory, so very large
+      logs open immediately. Searches run across all available processor cores
+      and the results appear in a second pane that stays in sync with the main
+      view. The log file is only ever opened read-only.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Regular expression search (PCRE2)</li>
+      <li>Parallel search across all processor cores</li>
+      <li>Line wrapping and line-range searching</li>
+      <li>Light and dark themes</li>
+      <li>Automatic encoding detection: UTF-8, UTF-16, CP1251, CP1252, Big5,
+          GB18030, ISO-8859-1, Shift_JIS and KOI8-R</li>
+      <li>Highlighting filters, marks and a file overview</li>
+    </ul>
+    <p>
+      This is a maintained fork of glogg by Nicolas Bonnefon, updated and
+      upgraded.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">neoglogg.desktop</launchable>
+
+  <url type="homepage">https://github.com/nekromoff/neoglogg</url>
+  <url type="bugtracker">https://github.com/nekromoff/neoglogg/issues</url>
+
+  <provides>
+    <binary>neoglogg</binary>
+  </provides>
+
+  <categories>
+    <category>Utility</category>
+    <category>TextTools</category>
+    <category>Development</category>
+  </categories>
+
+  <keywords>
+    <keyword>log</keyword>
+    <keyword>grep</keyword>
+    <keyword>search</keyword>
+    <keyword>viewer</keyword>
+  </keywords>
+
+  <content_rating type="oars-1.1"/>
+
+  <!-- Bump this when tagging a release; software centres show it as the
+       changelog and use the date to flag updates. -->
+  <releases>
+    <release version="1.0.0" date="2026-08-16">
+      <description>
+        <p>
+          First release of the fork: ported to Qt 6, with parallel search, line
+          wrapping, a dark theme, line-range searching, multi-file opening and
+          new icons.
+        </p>
+      </description>
+    </release>
+  </releases>
+</component>

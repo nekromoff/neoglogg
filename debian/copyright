@@ -2,10 +2,25 @@ Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: neoglogg
 Upstream-Contact: Daniel Duris <dusoft@staznosti.sk>
 Source: https://github.com/nekromoff/neoglogg
+Comment: neoglogg is a fork of glogg by Nicolas Bonnefon,
+ https://github.com/nickbnf/glogg
 
 Files: *
 Copyright: 2026 Daniel Duris <dusoft@staznosti.sk>
            2009-2018 Nicolas Bonnefon and other contributors
+License: GPL-3+
+
+Files: src/socketexternalcom.*
+Copyright: 2026 Daniel Duris <dusoft@staznosti.sk>
+           2016 Anton Filimonov
+License: GPL-3+
+
+Files: src/theme.*
+Copyright: 2026 Daniel Duris <dusoft@staznosti.sk>
+License: GPL-3+
+
+Files: images/*
+Copyright: 2026 Daniel Duris <dusoft@staznosti.sk>
 License: GPL-3+
 
 Files: debian/*

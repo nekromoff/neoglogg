@@ -177,8 +177,13 @@ doc.files += README.md LICENSE
 desktop.path = $$PREFIX/share/applications
 desktop.files = neoglogg.desktop
 
+# AppStream data, read by GNOME Software / KDE Discover to show the developer,
+# licence and description. Without it the application appears with no detail.
+metainfo.path = $$PREFIX/share/metainfo
+metainfo.files = neoglogg.metainfo.xml
+
 target.path = $$PREFIX/bin
-INSTALLS = target icon64 icon128 icon256 icon_svg doc desktop
+INSTALLS = target icon64 icon128 icon256 icon_svg doc desktop metainfo
 
 # Build directories
 CONFIG(debug, debug|release) {
