@@ -10,6 +10,16 @@
 #
 %global _version %{?version}%{!?version:0.0.0}
 
+# No separate -debuginfo/-debugsource packages.
+#
+# The .pro assigns QMAKE_CXXFLAGS outright (rather than appending), so the
+# RPM %%{optflags} never reach the compiler and the objects carry only a
+# bare -g. rpm's debuginfo extraction then cannot map the DWARF back to the
+# sources, produces an empty debugsourcefiles.list and fails the build.
+# A released GUI binary does not need a debuginfo package, so skip it and
+# strip the binary ourselves (rpm only strips when this is enabled).
+%global debug_package %{nil}
+
 Name:           neoglogg
 Version:        %{_version}
 Release:        1%{?dist}
@@ -19,6 +29,7 @@ License:        GPL-3.0-or-later
 URL:            https://github.com/nekromoff/neoglogg
 Source0:        %{name}-%{version}.tar.gz
 
+BuildRequires:  binutils
 BuildRequires:  gcc-c++
 BuildRequires:  make
 BuildRequires:  qt6-qtbase-devel
@@ -49,6 +60,10 @@ qmake6 %{name}.pro PREFIX=%{_prefix} VERSION="%{version}"
 
 %install
 %make_install INSTALL_ROOT=%{buildroot}
+
+# rpm does not strip when debug_package is disabled, and the .pro builds
+# with -g, so the binary would otherwise ship its full debug info.
+strip %{buildroot}%{_bindir}/%{name}
 
 %check
 desktop-file-validate %{buildroot}%{_datadir}/applications/%{name}.desktop

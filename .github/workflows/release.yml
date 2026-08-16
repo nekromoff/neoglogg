@@ -16,6 +16,18 @@ on:
       version:
         description: 'Version to build (without the leading v)'
         required: true
+      only:
+        description: 'Build just one artifact (to retry a single failed job). Nothing is published unless this is "all".'
+        required: false
+        default: all
+        type: choice
+        options:
+          - all
+          - deb
+          - rpm
+          - appimage
+          - windows
+          - macos
 
 permissions:
   contents: write
@@ -38,6 +50,9 @@ jobs:
   deb:
     name: Debian package
     needs: version
+    if: >-
+      ${{ github.event_name != 'workflow_dispatch'
+          || inputs.only == 'all' || inputs.only == 'deb' }}
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -104,6 +119,9 @@ jobs:
   rpm:
     name: RPM package
     needs: version
+    if: >-
+      ${{ github.event_name != 'workflow_dispatch'
+          || inputs.only == 'all' || inputs.only == 'rpm' }}
     runs-on: ubuntu-latest
     # Built inside Fedora rather than on the Ubuntu runner: rpmbuild needs
     # the RPM macros and the Qt 6 packages under their Fedora names. The
@@ -177,6 +195,9 @@ jobs:
   appimage:
     name: AppImage
     needs: version
+    if: >-
+      ${{ github.event_name != 'workflow_dispatch'
+          || inputs.only == 'all' || inputs.only == 'appimage' }}
     # 24.04, not an older image: Qt 6's 5compat module (required for the
     # legacy text codecs) is not packaged before then. The trade-off is the
     # glibc floor -- an AppImage bundles Qt but still links the host glibc,
@@ -230,6 +251,9 @@ jobs:
   windows:
     name: Windows installer
     needs: version
+    if: >-
+      ${{ github.event_name != 'workflow_dispatch'
+          || inputs.only == 'all' || inputs.only == 'windows' }}
     runs-on: windows-latest
     defaults:
       run:
@@ -280,6 +304,9 @@ jobs:
   macos:
     name: macOS disk image
     needs: version
+    if: >-
+      ${{ github.event_name != 'workflow_dispatch'
+          || inputs.only == 'all' || inputs.only == 'macos' }}
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
@@ -398,6 +425,9 @@ jobs:
 
   publish:
     name: Publish release
+    # A single-artifact run skips the other build jobs, which skips this one
+    # too: the draft release is only ever assembled from a complete set. Use
+    # the run's artifacts to check a one-off build.
     needs: [ version, deb, rpm, appimage, windows, macos ]
     runs-on: ubuntu-latest
     steps:
