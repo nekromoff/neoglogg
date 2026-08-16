@@ -53,9 +53,11 @@ theme rather than staying white.
 
 ## Installation
 
-Linux (DEB, RPM, AUR packages), Windows, Mac OS, AppImage
+Linux (DEB, RPM), Windows, Mac OS, AppImage
 
 See Releases: https://github.com/nekromoff/neoglogg/releases/
+
+No AUR pakcages, because Arch AUR registration website is clearly made by some people-hating bureaucrats.
 
 ## Requirements
 
