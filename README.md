@@ -3,19 +3,19 @@ neoglogg - the fast, smart log explorer. updated and upgraded.
 
 neoglogg by Daniel Duris, based on glogg by Nicolas Bonnefon, is a multi-platform GUI application that helps browse and search through long and complex log files.  It is designed with programmers and system administrators in mind and can be seen as a graphical, interactive combination of grep and less.
 
+<img width="512" height="512" alt="neoglogg" src="https://github.com/user-attachments/assets/12c419fe-6e20-435f-947e-358daae43581" />
+
 ## Main features
 
-* Runs on Unix-like systems, Windows and Mac thanks to Qt
-* Provides a second window showing the result of the current search
-* Searches in parallel across all available processor cores
-* Reads ISO-8859-1, UTF-8, UTF-16, CP1251, CP1252, Big5, GB18030, Shift_JIS
-  and KOI8-R, with automatic detection of the common ones
-* Supports Perl-compatible regular expressions (PCRE2, via `QRegularExpression`)
-* Colorizes the log and search results
-* Displays a context view of where in the log the lines of interest are
-* Is fast and reads the file directly from disk, without loading it into memory
-* Has a dark mode
-* Is open source, released under the GPL
+* Linux, Windows, Mac OS supported (thanks to Qt)
+* Extremely fast - streaming files directly from disk, without loading into memory
+* Parallel search across all available processor cores
+* UTF-8, UTF-16, CP1251, CP1252, Big5, GB18030, ISO-8859-1, Shift_JIS
+  and KOI8-R, automatic detection support
+* Regex search (PCRE2, via `QRegularExpression`)
+* Fast orientation in the log and search results - highlighted matched lines
+* A fast context view - where in the log the lines
+* Light / dark mode
 
 ## New in neoglogg
 
@@ -46,11 +46,13 @@ palette), toggled under Options → General → Appearance and remembered across
 sessions. The log views take their colours from the palette, so they follow the
 theme rather than staying white.
 
+**New identity and icons** Icons and installation images for all systems (Linux, Windows, Mac OS)
 
+## Installation
 
-## Download
+Deb package, Windows, Mac OS, AppImage
 
-Installers, binaries and source tarballs are not available yet.
+See Releases: https://github.com/nekromoff/neoglogg/releases/
 
 ## Requirements
 
