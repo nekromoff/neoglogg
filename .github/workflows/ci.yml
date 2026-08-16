@@ -1,7 +1,11 @@
 name: CI
 
-# Fast feedback on every push and pull request: compile on all three
-# platforms, no packaging. The release workflow does the slow parts.
+# Compile on all three platforms, no packaging. The release workflow does the
+# slow parts.
+#
+# Tag-only by choice: ordinary pushes to master are not built, so breakage is
+# caught when a release is cut rather than when it lands. Run this by hand from
+# the Actions tab (workflow_dispatch) to check a branch before tagging.
 #
 # The test suite is deliberately not run here. tests/CMakeLists.txt needs a
 # hand-built gmock via $GMOCK_HOME and does not build unattended; wire it in
@@ -9,8 +13,7 @@ name: CI
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
+    tags: [ 'v*' ]
   workflow_dispatch:
 
 jobs:
