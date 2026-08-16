@@ -52,15 +52,9 @@ theme rather than staying white.
 
 ## Installation
 
-Deb and RPM packages, Windows, Mac OS, AppImage
+Linux (DEB, RPM, AUR packages), Windows, Mac OS, AppImage
 
 See Releases: https://github.com/nekromoff/neoglogg/releases/
-
-On Arch Linux, install `neoglogg` from the AUR:
-
-```
-yay -S neoglogg
-```
 
 ## Requirements
 
