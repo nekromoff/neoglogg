@@ -154,6 +154,9 @@ class LogFilteredData : public AbstractLogData {
     int maxLengthMarks_;
     // Number of lines of the LogData that has been searched for:
     qint64 nbLinesProcessed_;
+    // Revision of matching_lines_ as seen by the worker's SearchData,
+    // used to fetch results incrementally (see SearchData::getAll).
+    uint64_t searchResultsRevision_ = 0;
 
     Visibility visibility_;
 
@@ -171,6 +174,7 @@ class LogFilteredData : public AbstractLogData {
     LineNumber findFilteredLine( LineNumber lineNum ) const;
 
     void regenerateFilteredItemsCache() const;
+    void insertNewMatchesInFilteredItemsCache( size_t oldNbMatches );
 };
 
 // A class representing a Mark or Match.

@@ -21,6 +21,9 @@
 #ifndef LOGDATAWORKERTHREAD_H
 #define LOGDATAWORKERTHREAD_H
 
+#include <atomic>
+#include <vector>
+
 #include <QObject>
 #include <QThread>
 #include <QMutex>
@@ -52,6 +55,10 @@ class IndexingData
     // of the end of the passed line.
     qint64 getPosForLine( LineNumber line ) const;
 
+    // Get the end position of 'number' consecutive lines starting at
+    // 'first_line', taking the lock once rather than once per line.
+    std::vector<qint64> getPosForLines( LineNumber first_line, int number ) const;
+
     // Get the guessed encoding for the content.
     EncodingSpeculator::Encoding getEncodingGuess() const;
 
@@ -79,7 +86,7 @@ class IndexOperation : public QObject
   Q_OBJECT
   public:
     IndexOperation( const QString& fileName,
-            IndexingData* indexingData, bool* interruptRequest,
+            IndexingData* indexingData, std::atomic_bool* interruptRequest,
             EncodingSpeculator* encodingSpeculator );
 
     virtual ~IndexOperation() { }
@@ -100,7 +107,7 @@ class IndexOperation : public QObject
             qint64 initialPosition );
 
     QString fileName_;
-    bool* interruptRequest_;
+    std::atomic_bool* interruptRequest_;
     IndexingData* indexing_data_;
 
     EncodingSpeculator* encoding_speculator_;
@@ -110,7 +117,7 @@ class FullIndexOperation : public IndexOperation
 {
   public:
     FullIndexOperation( const QString& fileName,
-            IndexingData* indexingData, bool* interruptRequest,
+            IndexingData* indexingData, std::atomic_bool* interruptRequest,
             EncodingSpeculator* speculator )
         : IndexOperation( fileName, indexingData, interruptRequest, speculator ) { }
     virtual bool start();
@@ -120,7 +127,7 @@ class PartialIndexOperation : public IndexOperation
 {
   public:
     PartialIndexOperation( const QString& fileName,
-            IndexingData* indexingData, bool* interruptRequest,
+            IndexingData* indexingData, std::atomic_bool* interruptRequest,
             EncodingSpeculator* speculator )
         : IndexOperation( fileName, indexingData, interruptRequest, speculator ) { }
     virtual bool start();
@@ -179,7 +186,8 @@ class LogDataWorkerThread : public QThread
 
     // Set when the thread must die
     bool terminate_;
-    bool interruptRequested_;
+    // Written by the GUI thread, read by the indexing loop: must be atomic
+    std::atomic_bool interruptRequested_;
     IndexOperation* operationRequested_;
 
     // Pointer to the owner's indexing data (we modify it)

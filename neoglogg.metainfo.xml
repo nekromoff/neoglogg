@@ -71,12 +71,12 @@
   <!-- Bump this when tagging a release; software centres show it as the
        changelog and use the date to flag updates. -->
   <releases>
-    <release version="1.0.0" date="2026-08-16">
+    <release version="1.1" date="2026-08-16">
       <description>
         <p>
-          First release of the fork: ported to Qt 6, with parallel search, line
-          wrapping, a dark theme, line-range searching, multi-file opening and
-          new icons.
+          Faster indexing and searching, lower memory use, keyboard navigation
+          that moves the selected line, and fixes for saved filters, searches
+          and session state not being restored.
         </p>
       </description>
     </release>

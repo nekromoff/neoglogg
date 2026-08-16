@@ -29,6 +29,7 @@
 #include <QRegularExpression>
 #include <QList>
 
+#include <atomic>
 #include <vector>
 #include <memory>
 
@@ -65,13 +66,13 @@ class SearchData
   public:
     SearchData() : dataMutex_(), matches_(), maxLength_(0) { }
 
-    // Atomically get all the search data
+    // Atomically update the caller's copy of the search data. 'revision'
+    // is owned by the caller and must start at 0: when it does not match
+    // this object's revision the matches are fully copied (and the
+    // caller's revision updated), otherwise the caller's array is assumed
+    // to be a prefix of ours and only the new matches are appended.
     void getAll( int* length, SearchResultArray* matches,
-            qint64* nbLinesProcessed ) const;
-    // Atomically set all the search data
-    // (overwriting the existing)
-    // (the matches are always moved)
-    void setAll( int length, SearchResultArray&& matches );
+            qint64* nbLinesProcessed, uint64_t* revision ) const;
     // Atomically add to all the existing search data.
     // The matches must be sorted and start after the last match already
     // stored, so that the result array stays sorted (it is looked up by
@@ -91,6 +92,10 @@ class SearchData
     SearchResultArray matches_;
     int maxLength_;
     qint64 nbLinesProcessed_;
+    // Bumped whenever matches_ is replaced rather than appended to, so
+    // that getAll() knows a caller's incremental copy is stale. Starts at
+    // 1 so a fresh caller (revision 0) always gets a full copy.
+    uint64_t revision_ = 1;
 };
 
 // One contiguous range of lines, searched by a single worker.
@@ -136,7 +141,7 @@ class SearchOperation : public QObject
   Q_OBJECT
   public:
     SearchOperation(const LogData* sourceLogData,
-            const QRegularExpression &regExp, bool* interruptRequest,
+            const QRegularExpression &regExp, std::atomic_bool* interruptRequest,
             QThreadPool* threadPool, const SearchRange& range );
 
     virtual ~SearchOperation() { }
@@ -155,7 +160,7 @@ class SearchOperation : public QObject
     // the shared results and the line to begin the search from.
     void doSearch( SearchData& result, qint64 initialLine );
 
-    bool* interruptRequested_;
+    std::atomic_bool* interruptRequested_;
     const QRegularExpression regexp_;
     const LogData* sourceLogData_;
     const SearchRange range_;
@@ -175,7 +180,7 @@ class FullSearchOperation : public SearchOperation
 {
   public:
     FullSearchOperation( const LogData* sourceLogData, const QRegularExpression& regExp,
-            bool* interruptRequest, QThreadPool* threadPool,
+            std::atomic_bool* interruptRequest, QThreadPool* threadPool,
             const SearchRange& range )
         : SearchOperation( sourceLogData, regExp, interruptRequest, threadPool,
                 range ) {}
@@ -186,7 +191,7 @@ class UpdateSearchOperation : public SearchOperation
 {
   public:
     UpdateSearchOperation( const LogData* sourceLogData, const QRegularExpression& regExp,
-            bool* interruptRequest, QThreadPool* threadPool,
+            std::atomic_bool* interruptRequest, QThreadPool* threadPool,
             const SearchRange& range, qint64 position )
         : SearchOperation( sourceLogData, regExp, interruptRequest, threadPool,
                 range ),
@@ -223,9 +228,9 @@ class LogFilteredDataWorkerThread : public QThread
     // Interrupts the search if one is in progress
     void interrupt();
 
-    // Returns a copy of the current indexing data
+    // Update the caller's copy of the search results (see SearchData::getAll)
     void getSearchResult( int* maxLength, SearchResultArray* searchMatches,
-           qint64* nbLinesProcessed );
+           qint64* nbLinesProcessed, uint64_t* revision );
 
   signals:
     // Sent during the indexing process to signal progress
@@ -248,7 +253,8 @@ class LogFilteredDataWorkerThread : public QThread
 
     // Set when the thread must die
     bool terminate_;
-    bool interruptRequested_;
+    // Written by the GUI thread, read by every search worker: must be atomic
+    std::atomic_bool interruptRequested_;
     SearchOperation* operationRequested_;
 
     // Workers the search chunks are spread over. Owned here rather than by

@@ -101,6 +101,79 @@ jobs:
           name: deb
           path: out/*.deb
 
+  rpm:
+    name: RPM package
+    needs: version
+    runs-on: ubuntu-latest
+    # Built inside Fedora rather than on the Ubuntu runner: rpmbuild needs
+    # the RPM macros and the Qt 6 packages under their Fedora names. The
+    # result installs on Fedora/RHEL/openSUSE with dnf, yum or zypper.
+    container: fedora:40
+    steps:
+      - name: Install build dependencies
+        run: |
+          dnf -y install \
+            rpm-build rpmdevtools git-core tar \
+            gcc-c++ make qt6-qtbase-devel qt6-qt5compat-devel boost-devel \
+            desktop-file-utils libappstream-glib
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # The checkout is owned by a different user than the one rpmbuild runs
+      # as inside the container, which git refuses to work with.
+      - name: Mark the checkout safe for git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      # Same reasoning as the deb job: the committed <releases> entry would
+      # otherwise advertise the previous version forever.
+      - name: Stamp the AppStream release entry
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          python3 - <<'PYEOF'
+          import os, re, datetime
+          version = os.environ['VERSION']
+          today = datetime.date.today().isoformat()
+          block = ('  <releases>\n'
+                   '    <release version="%s" date="%s"/>\n'
+                   '  </releases>' % (version, today))
+          path = 'neoglogg.metainfo.xml'
+          text = open(path).read()
+          text, n = re.subn(r'  <releases>.*?</releases>', block, text, flags=re.S)
+          assert n == 1, 'no <releases> block found'
+          open(path, 'w').write(text)
+          print(block)
+          PYEOF
+
+      # rpmbuild builds from a tarball, so roll one whose top directory is
+      # name-version, as %autosetup expects.
+      - name: Create the source tarball
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          rpmdev-setuptree
+          tar --exclude-vcs \
+              --transform "s,^\.,neoglogg-${VERSION}," \
+              -czf ~/rpmbuild/SOURCES/neoglogg-${VERSION}.tar.gz .
+
+      - name: Build the package
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: rpmbuild -bb --define "version ${VERSION}" neoglogg.spec
+
+      - name: Collect
+        run: |
+          mkdir -p out
+          find ~/rpmbuild/RPMS -name '*.rpm' -exec mv {} out/ \;
+          ls -l out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rpm
+          path: out/*.rpm
+
   appimage:
     name: AppImage
     needs: version
@@ -246,9 +319,86 @@ jobs:
           name: macos
           path: '*.dmg'
 
+  aur:
+    name: AUR package
+    needs: [ version, publish ]
+    runs-on: ubuntu-latest
+    # Only on a real tag: the AUR package points at the tag's source tarball,
+    # which a workflow_dispatch run has not created.
+    if: startsWith(github.ref, 'refs/tags/v')
+    # Needs the AUR_SSH_KEY secret (a private key whose public half is
+    # registered on the AUR account). Without it the job is skipped rather
+    # than failing the release.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Skip if no AUR key is configured
+        id: gate
+        env:
+          AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
+        run: |
+          if [ -z "$AUR_SSH_KEY" ]; then
+            echo "No AUR_SSH_KEY secret set, skipping the AUR update."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Stamp the PKGBUILD with the version and checksum
+        if: steps.gate.outputs.enabled == 'true'
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          cd packaging/aur
+          sed -i "s/^pkgver=.*/pkgver=${VERSION}/" PKGBUILD
+          sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
+          # Checksum the tarball GitHub generated for the tag
+          url="https://github.com/${GITHUB_REPOSITORY}/archive/refs/tags/v${VERSION}.tar.gz"
+          curl -sL --retry 5 --retry-delay 5 -o src.tar.gz "$url"
+          sum=$(sha256sum src.tar.gz | cut -d' ' -f1)
+          sed -i "s/^sha256sums=.*/sha256sums=('${sum}')/" PKGBUILD
+          rm -f src.tar.gz
+          cat PKGBUILD
+
+      # makepkg refuses to run as root, so .SRCINFO is generated in the
+      # official Arch container as a normal user.
+      - name: Generate .SRCINFO
+        if: steps.gate.outputs.enabled == 'true'
+        run: |
+          docker run --rm -v "$PWD/packaging/aur:/pkg" archlinux:base-devel bash -c '
+            pacman -Sy --noconfirm >/dev/null
+            useradd -m builder
+            cp /pkg/PKGBUILD /home/builder/
+            chown -R builder /home/builder
+            su builder -c "cd /home/builder && makepkg --printsrcinfo" > /pkg/.SRCINFO
+          '
+          cat packaging/aur/.SRCINFO
+
+      - name: Push to the AUR
+        if: steps.gate.outputs.enabled == 'true'
+        env:
+          AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$AUR_SSH_KEY" > ~/.ssh/aur
+          chmod 600 ~/.ssh/aur
+          ssh-keyscan aur.archlinux.org >> ~/.ssh/known_hosts
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/aur"
+
+          git clone ssh://aur@aur.archlinux.org/neoglogg.git aur-repo
+          cp packaging/aur/PKGBUILD packaging/aur/.SRCINFO aur-repo/
+          cd aur-repo
+          git config user.name "Daniel Duris"
+          git config user.email "dusoft@staznosti.sk"
+          git add PKGBUILD .SRCINFO
+          git commit -m "Update to ${VERSION}" || {
+            echo "Nothing to commit."; exit 0; }
+          git push
+
   publish:
     name: Publish release
-    needs: [ version, deb, appimage, windows, macos ]
+    needs: [ version, deb, rpm, appimage, windows, macos ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4

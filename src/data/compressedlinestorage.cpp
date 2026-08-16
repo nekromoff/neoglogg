@@ -304,11 +304,15 @@ void CompressedLinePositionStorage::append( uint64_t pos )
             size_t new_size = ( previous_block_pointer_
                     + sizeof( uint16_t ) + sizeof( uint32_t ) ) - block;
             void* new_location = realloc( block, new_size );
-            if ( new_location )
+            // On failure the original block is untouched and still valid,
+            // so only rebase the pointers when the realloc succeeded.
+            if ( new_location ) {
                 block32_index_[block_index] = static_cast<char*>( new_location );
+                previous_block_pointer_ = static_cast<char*>( new_location )
+                        + ( previous_block_pointer_ - block );
+            }
 
             block_pointer_ = nullptr;
-            previous_block_pointer_ = static_cast<char*>( new_location ) + ( previous_block_pointer_ - block );
         }
     }
     else {
@@ -323,11 +327,15 @@ void CompressedLinePositionStorage::append( uint64_t pos )
             size_t new_size = ( previous_block_pointer_
                     + sizeof( uint16_t ) + sizeof( uint64_t ) ) - block;
             void* new_location = realloc( block, new_size );
-            if ( new_location )
+            // On failure the original block is untouched and still valid,
+            // so only rebase the pointers when the realloc succeeded.
+            if ( new_location ) {
                 block64_index_[block_index] = static_cast<char*>( new_location );
+                previous_block_pointer_ = static_cast<char*>( new_location )
+                        + ( previous_block_pointer_ - block );
+            }
 
             block_pointer_ = nullptr;
-            previous_block_pointer_ = static_cast<char*>( new_location ) + ( previous_block_pointer_ - block );
         }
     }
 }

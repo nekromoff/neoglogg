@@ -86,7 +86,7 @@ void RecentFiles::retrieveFromStorage( QSettings& settings )
     if ( settings.contains( "RecentFiles/version" ) ) {
         // Unserialise the "new style" stored history
         settings.beginGroup( "RecentFiles" );
-        if ( settings.value( "version" ) == RECENTFILES_VERSION ) {
+        if ( settings.value( "version" ).toInt() == RECENTFILES_VERSION ) {
             int size = settings.beginReadArray( "filesHistory" );
             for (int i = 0; i < size; ++i) {
                 settings.setArrayIndex(i);

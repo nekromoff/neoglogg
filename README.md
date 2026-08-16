@@ -52,9 +52,15 @@ theme rather than staying white.
 
 ## Installation
 
-Deb package, Windows, Mac OS, AppImage
+Deb and RPM packages, Windows, Mac OS, AppImage
 
 See Releases: https://github.com/nekromoff/neoglogg/releases/
+
+On Arch Linux, install `neoglogg` from the AUR:
+
+```
+yay -S neoglogg
+```
 
 ## Requirements
 
@@ -138,9 +144,20 @@ git tag -a v1.2.3 -m "1.2.3"
 git push origin v1.2.3
 ```
 
-`.github/workflows/release.yml` then produces a `.deb`, an `.AppImage`, a
-Windows installer plus portable zip, and a macOS `.dmg`, and attaches them to
-a **draft** GitHub Release for review before publishing.
+`.github/workflows/release.yml` then produces a `.deb`, an `.rpm`, an
+`.AppImage`, a Windows installer plus portable zip, and a macOS `.dmg`, and
+attaches them to a **draft** GitHub Release for review before publishing.
+
+The RPM is built in a Fedora container from `neoglogg.spec` (the Ubuntu
+runners have neither the RPM macros nor Qt 6 under its Fedora package names)
+and installs with `dnf`, `yum` or `zypper`.
+
+The AUR package is pushed after the release is published, since its PKGBUILD
+checksums the tag's source tarball. It needs an `AUR_SSH_KEY` secret holding
+a private key whose public half is registered on the AUR account; without
+that secret the job skips itself instead of failing the release. The
+PKGBUILD lives in `packaging/aur/` and its `pkgver`, `pkgrel` and checksum
+are rewritten from the tag, so edit the rest of it there, not on the AUR.
 
 `.github/workflows/ci.yml` compiles on Linux, Windows and macOS. It runs on
 tags and on manual dispatch from the Actions tab, not on ordinary pushes, so

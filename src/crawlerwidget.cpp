@@ -276,6 +276,50 @@ CrawlerWidget::doGetViewContext() const
 // Slots
 //
 
+// Put the focus back in the search box, with the text selected so it can
+// be typed over or cleared with a further Escape.
+void CrawlerWidget::returnFocusToSearch()
+{
+    searchLineEdit->lineEdit()->setFocus( Qt::OtherFocusReason );
+    searchLineEdit->lineEdit()->selectAll();
+}
+
+// Catch Escape in the search box (clears the current search) and make
+// Enter activate the tab-focused buttons, which Qt only triggers on Space.
+bool CrawlerWidget::eventFilter( QObject* obj, QEvent* event )
+{
+    if ( ( event->type() == QEvent::KeyPress )
+            || ( event->type() == QEvent::ShortcutOverride ) ) {
+        const QKeyEvent* keyEvent = static_cast<QKeyEvent*>( event );
+
+        if ( ( ( obj == searchLineEdit->lineEdit() ) || ( obj == searchLineEdit ) )
+                && ( keyEvent->key() == Qt::Key_Escape ) ) {
+            // Claim the key at ShortcutOverride stage so it is delivered
+            // to us as a KeyPress rather than eaten as a shortcut.
+            if ( event->type() == QEvent::ShortcutOverride ) {
+                event->accept();
+                return true;
+            }
+            clearSearch();
+            return true;
+        }
+
+        if ( ( keyEvent->key() == Qt::Key_Return )
+                || ( keyEvent->key() == Qt::Key_Enter ) ) {
+            if ( obj == searchButton ) {
+                searchButton->animateClick();
+                return true;
+            }
+            if ( obj == stopButton ) {
+                stopButton->animateClick();
+                return true;
+            }
+        }
+    }
+
+    return QSplitter::eventFilter( obj, event );
+}
+
 void CrawlerWidget::startNewSearch()
 {
     // Record the search line in the recent list
@@ -288,6 +332,10 @@ void CrawlerWidget::startNewSearch()
     updateSearchCombo();
     // Call the private function to do the search
     replaceCurrentSearch( searchLineEdit->currentText() );
+
+    // Put the focus on the results so the keyboard (cursor keys, PgUp/Dn,
+    // Home/End, F3...) navigates the list straight away.
+    filteredView->setFocus( Qt::OtherFocusReason );
 }
 
 void CrawlerWidget::stopSearch()
@@ -374,7 +422,10 @@ void CrawlerWidget::updateFilteredView( int nbMatches, int progress, qint64 init
 
     // Try to restore the filtered window selection close to where it was
     // only for full searches to avoid disconnecting follow mode!
-    if ( ( progress == 100 ) && ( initial_position == 0 ) && ( !isFollowEnabled() ) ) {
+    // (nothing to restore if there is no result, and trying would ask the
+    // (empty) filtered data for line 0)
+    if ( ( progress == 100 ) && ( initial_position == 0 ) && ( !isFollowEnabled() )
+            && ( logFilteredData_->getNbLine() > 0 ) ) {
         const int currenLineIndex = logFilteredData_->getLineIndexNumber(currentLineNumber_);
         LOG(logDEBUG) << "updateFilteredView: restoring selection: "
                       << " absolute line number (0based) " << currentLineNumber_
@@ -532,8 +583,14 @@ void CrawlerWidget::loadingFinishedHandler( LoadingStatus status )
     // Also change the data available icon
     if ( firstLoadDone_ )
         changeDataStatus( DataStatus::NEW_DATA );
-    else
+    else {
         firstLoadDone_ = true;
+
+        // On the very first load put the focus on the log view, so the
+        // navigation keys work without clicking anywhere first (a later
+        // search moves it to the filtered view, see startNewSearch()).
+        logMainView->setFocus( Qt::OtherFocusReason );
+    }
 }
 
 void CrawlerWidget::fileChangedHandler( LogData::MonitoredFileStatus status )
@@ -971,6 +1028,17 @@ void CrawlerWidget::setup()
             filteredView, SLOT( setFocus() ) );
     connect( filteredView, SIGNAL( exitView() ),
             logMainView, SLOT( setFocus() ) );
+
+    // Escape in a view sends the focus back to the search box with its
+    // text selected; Escape there then clears the search (see eventFilter)
+    connect( logMainView, SIGNAL( escapePressed() ),
+            this, SLOT( returnFocusToSearch() ) );
+    connect( filteredView, SIGNAL( escapePressed() ),
+            this, SLOT( returnFocusToSearch() ) );
+    searchLineEdit->installEventFilter( this );
+    searchLineEdit->lineEdit()->installEventFilter( this );
+    searchButton->installEventFilter( this );
+    stopButton->installEventFilter( this );
 }
 
 // Create a new search using the text passed, replace the currently

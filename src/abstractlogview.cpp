@@ -373,16 +373,7 @@ void AbstractLogView::mousePressEvent( QMouseEvent* mouseEvent )
             copyAction_->setStatusTip( tr("Copy the selection") );
         }
 
-        if ( selection_.isPortion() ) {
-            findNextAction_->setEnabled( true );
-            findPreviousAction_->setEnabled( true );
-            addToSearchAction_->setEnabled( true );
-        }
-        else {
-            findNextAction_->setEnabled( false );
-            findPreviousAction_->setEnabled( false );
-            addToSearchAction_->setEnabled( false );
-        }
+        addToSearchAction_->setEnabled( selection_.isPortion() );
 
         // "Add to search" only makes sense in regexp mode
         if ( config->mainRegexpType() != ExtendedRegexp )
@@ -524,55 +515,65 @@ void AbstractLogView::keyPressEvent( QKeyEvent* keyEvent )
 {
     LOG(logDEBUG4) << "keyPressEvent received";
 
-    bool controlModifier = (keyEvent->modifiers() & Qt::ControlModifier) == Qt::ControlModifier;
-    bool shiftModifier = (keyEvent->modifiers() & Qt::ShiftModifier) == Qt::ShiftModifier;
-    bool noModifier = keyEvent->modifiers() == Qt::NoModifier;
+    // Navigation keys (PgUp/PgDn, Home/End, arrows) come with the keypad
+    // modifier set on many keyboards; it is meaningless here so mask it out
+    // or those keys would fall through to the default scroll-only handler.
+    const Qt::KeyboardModifiers modifiers =
+        keyEvent->modifiers() & ~Qt::KeypadModifier;
+    bool controlModifier = (modifiers & Qt::ControlModifier) == Qt::ControlModifier;
+    bool shiftModifier = (modifiers & Qt::ShiftModifier) == Qt::ShiftModifier;
+    bool noModifier = modifiers == Qt::NoModifier;
+
+    // The navigation keys move the selected line (the "cursor"), they do
+    // not merely scroll the viewport.
+    //
+    // Every branch below fully handles the key: it must be accepted, or
+    // the (still "ignored") event carries on to the scroll bars, which
+    // would scroll the viewport by a page/line on top of the selection
+    // move and leave the selected row outside the view.
+    bool handled = true;
 
     if ( keyEvent->key() == Qt::Key_Left && noModifier )
         horizontalScrollBar()->triggerAction(QScrollBar::SliderPageStepSub);
     else if ( keyEvent->key() == Qt::Key_Right  && noModifier )
         horizontalScrollBar()->triggerAction(QScrollBar::SliderPageStepAdd);
-    else if ( lineWrap_ && keyEvent->key() == Qt::Key_Up && noModifier )
-        scrollRowsBy( -1 );
-    else if ( lineWrap_ && keyEvent->key() == Qt::Key_Down && noModifier )
-        scrollRowsBy( 1 );
-    else if ( lineWrap_ && keyEvent->key() == Qt::Key_PageUp && noModifier )
-        scrollRowsBy( - ( viewport()->height() / charHeight_ ) );
-    else if ( lineWrap_ && keyEvent->key() == Qt::Key_PageDown && noModifier )
-        scrollRowsBy( viewport()->height() / charHeight_ );
-    else if ( lineWrap_ && keyEvent->key() == Qt::Key_Home && !controlModifier )
-        // Back to the first row of the top line
-        scrollRowsBy( - firstRowOffset_ );
-    else if ( lineWrap_ && keyEvent->key() == Qt::Key_End && !controlModifier ) {
-        // Bring the last row of the top line to the bottom of the view
-        const int viewportRows = viewport()->height() / charHeight_;
-        const int delta =
-            rowsInLineExact( firstLine ) - viewportRows - firstRowOffset_;
-        if ( delta > 0 )
-            scrollRowsBy( delta );
+    else if ( keyEvent->key() == Qt::Key_Up && noModifier ) {
+        disableFollow();
+        moveSelection( -1 );
     }
-    else if ( keyEvent->key() == Qt::Key_Home && !controlModifier)
-        jumpToStartOfLine();
-    else if ( keyEvent->key() == Qt::Key_End  && !controlModifier)
-        jumpToRightOfScreen();
-    else if ( (keyEvent->key() == Qt::Key_PageDown && controlModifier)
-           || (keyEvent->key() == Qt::Key_End && controlModifier) )
-    {
-        disableFollow(); // duplicate of 'G' action.
-        selection_.selectLine( logData->getNbLine() - 1 );
-        emit updateLineNumber( logData->getNbLine() - 1 );
-        jumpToBottom();
+    else if ( keyEvent->key() == Qt::Key_Down && noModifier ) {
+        disableFollow();
+        moveSelection( 1 );
     }
-    else if ( (keyEvent->key() == Qt::Key_PageUp && controlModifier)
-           || (keyEvent->key() == Qt::Key_Home && controlModifier) )
+    else if ( keyEvent->key() == Qt::Key_PageUp && noModifier ) {
+        disableFollow();
+        moveSelection( - qMax( 1, viewport()->height() / charHeight_ ) );
+    }
+    else if ( keyEvent->key() == Qt::Key_PageDown && noModifier ) {
+        disableFollow();
+        moveSelection( qMax( 1, viewport()->height() / charHeight_ ) );
+    }
+    else if ( ( keyEvent->key() == Qt::Key_End && !shiftModifier )
+           || ( keyEvent->key() == Qt::Key_PageDown && controlModifier ) )
+        // Select the last line and scroll it into (full) view
+        selectAndDisplayLine( logData->getNbLine() - 1 );
+    else if ( ( keyEvent->key() == Qt::Key_Home && !shiftModifier )
+           || ( keyEvent->key() == Qt::Key_PageUp && controlModifier ) )
         selectAndDisplayLine( 0 );
+    else if ( keyEvent->key() == Qt::Key_Home && shiftModifier )
+        jumpToStartOfLine();
+    else if ( keyEvent->key() == Qt::Key_End && shiftModifier )
+        jumpToRightOfScreen();
     else if ( keyEvent->key() == Qt::Key_F3 && !shiftModifier )
         searchNext(); // duplicate of 'n' action.
     else if ( keyEvent->key() == Qt::Key_F3 && shiftModifier )
         searchPrevious(); // duplicate of 'N' action.
     else if ( keyEvent->key() == Qt::Key_Space && noModifier )
         emit exitView();
+    else if ( keyEvent->key() == Qt::Key_Escape && noModifier )
+        emit escapePressed();
     else {
+        handled = false;
         const char character = (keyEvent->text())[0].toLatin1();
 
         if ( keyEvent->modifiers() == Qt::NoModifier &&
@@ -655,6 +656,9 @@ void AbstractLogView::keyPressEvent( QKeyEvent* keyEvent )
             }
         }
     }
+
+    if ( handled )
+        keyEvent->accept();
 
     if ( keyEvent->isAccepted() ) {
         emit activity();
@@ -1162,6 +1166,9 @@ void AbstractLogView::selectAll()
 
 void AbstractLogView::selectAndDisplayLine( int line )
 {
+    if ( ( line < 0 ) || ( line >= logData->getNbLine() ) )
+        return;
+
     disableFollow();
     selection_.selectLine( line );
     displayLine( line );
@@ -1406,23 +1413,60 @@ QPoint AbstractLogView::convertCoordToFilePos( const QPoint& pos ) const
 // Doing so, it will throw itself a scrollContents event.
 void AbstractLogView::displayLine( LineNumber line )
 {
-    // If the line is already the screen
-    if ( ( line >= firstLine ) &&
-         ( line < ( firstLine + getNbVisibleLines() ) ) ) {
-        // Invalidate our cache
-        textAreaCache_.invalid_ = true;
+    const qint64 nbLines = logData->getNbLine();
+    if ( ( nbLines == 0 ) || ( static_cast<qint64>( line ) >= nbLines ) )
+        return;
 
-        // ... don't scroll and just repaint
-        update();
-    } else {
-        jumpToLine( line );
+    // Only count FULLY visible rows: the last row of the viewport is
+    // usually cut off, a selection sitting there must still scroll.
+    const int nbFullRows = qMax( 1, viewport()->height() / charHeight_ );
+
+    if ( line < firstLine ) {
+        // Above the view, scroll up just enough to make it the top line
+        verticalScrollBar()->setValue( line );
     }
+    else if ( !lineWrap_ ) {
+        if ( line >= firstLine + nbFullRows ) {
+            // Below the view, scroll down just enough to make it the last
+            // fully visible line
+            verticalScrollBar()->setValue( line - nbFullRows + 1 );
+        }
+    }
+    else {
+        // With wrapping on, a line covers several visual rows, so being
+        // within nbFullRows *lines* of the top is not enough: count the
+        // actual rows and scroll by rows.
+
+        // If the line is far below, jump close to it first so the row
+        // count below stays bounded (this resets firstRowOffset_).
+        if ( line >= firstLine + nbFullRows )
+            verticalScrollBar()->setValue(
+                    qMax( 0, static_cast<int>( line ) - nbFullRows + 1 ) );
+
+        // Rows from the top of the view down to the bottom of 'line'
+        int rowsToEnd = - firstRowOffset_;
+        for ( qint64 l = firstLine; l <= line; ++l )
+            rowsToEnd += rowsInLineExact( l );
+
+        if ( rowsToEnd > nbFullRows )
+            scrollRowsBy( rowsToEnd - nbFullRows );
+    }
+
+    // Repaint unconditionally: even when the scrollbar did not move, the
+    // selection has typically changed, and a plain update() would repaint
+    // from the stale cached pixmap without the new highlight.
+    textAreaCache_.invalid_ = true;
+    update();
 }
 
 // Move the selection up and down by the passed number of lines
 void AbstractLogView::moveSelection( int delta )
 {
     LOG(logDEBUG) << "AbstractLogView::moveSelection delta=" << delta;
+
+    // Nothing to move the selection to in an empty view
+    if ( logData->getNbLine() == 0 )
+        return;
 
     QList<int> selection = selection_.getLines();
     int new_line;
@@ -1568,21 +1612,9 @@ void AbstractLogView::createMenu()
     // No text as this action title depends on the type of selection
     connect( copyAction_, SIGNAL(triggered()), this, SLOT(copy()) );
 
-    // For '#' and '*', shortcuts doesn't seem to work but
-    // at least it displays them in the menu, we manually handle those keys
-    // as keys event anyway (in keyPressEvent).
-    findNextAction_ = new QAction(tr("Find &next"), this);
-    findNextAction_->setShortcut( Qt::Key_Asterisk );
-    findNextAction_->setStatusTip( tr("Find the next occurence") );
-    connect( findNextAction_, SIGNAL(triggered()),
-            this, SLOT( findNextSelected() ) );
-
-    findPreviousAction_ = new QAction( tr("Find &previous"), this );
-    findPreviousAction_->setShortcut( tr("#")  );
-    findPreviousAction_->setStatusTip( tr("Find the previous occurence") );
-    connect( findPreviousAction_, SIGNAL(triggered()),
-            this, SLOT( findPreviousSelected() ) );
-
+    // Find next/previous on the selection stay available on the keyboard
+    // ('*' and '#', handled in keyPressEvent) but are not in the context
+    // menu, where they were disabled most of the time.
     addToSearchAction_ = new QAction( tr("&Add to search"), this );
     addToSearchAction_->setStatusTip(
             tr("Add the selection to the current search") );
@@ -1592,8 +1624,6 @@ void AbstractLogView::createMenu()
     popupMenu_ = new QMenu( this );
     popupMenu_->addAction( copyAction_ );
     popupMenu_->addSeparator();
-    popupMenu_->addAction( findNextAction_ );
-    popupMenu_->addAction( findPreviousAction_ );
     popupMenu_->addAction( addToSearchAction_ );
 }
 
@@ -1648,8 +1678,8 @@ void AbstractLogView::drawTextArea( QPaintDevice* paint_device, int32_t )
     const int paintDeviceHeight = paint_device->height() / viewport()->devicePixelRatio();
     const int paintDeviceWidth = paint_device->width() / viewport()->devicePixelRatio();
     const QPalette& palette = viewport()->palette();
-    std::shared_ptr<const FilterSet> filterSet =
-        Persistent<FilterSet>( "filterSet" );
+    if ( !filterSet_ )
+        filterSet_ = Persistent<FilterSet>( "filterSet" );
     QColor foreColor, backColor;
 
     static const QBrush normalBulletBrush = QBrush( Qt::white );
@@ -1686,14 +1716,21 @@ void AbstractLogView::drawTextArea( QPaintDevice* paint_device, int32_t )
             static_cast<int>( getNbVisibleLines() ) + firstRowOffset_;
         int rowsFetched = 0;
 
+        // The cap must be in rows, not visible lines: when the view starts
+        // part-way through a wrapped line (firstRowOffset_ > 0), filling
+        // the viewport can take more than getNbVisibleLines() lines, and
+        // stopping short would leave the bottom rows undrawn.
+        const int64_t maxWrapLines = std::min(
+                static_cast<int64_t>( rowsNeeded ), lines_in_file - firstLine );
+
         wrapLayoutFirstLine_ = firstLine;
         wrapRowCounts_.clear();
 
         while ( ( rowsFetched < rowsNeeded )
-                && ( lines.count() < maxNbLines ) ) {
+                && ( lines.count() < maxWrapLines ) ) {
             // lines.count() returns qsizetype in Qt 6
             const int chunk = static_cast<int>( std::min<int64_t>(
-                    8, maxNbLines - lines.count() ) );
+                    8, maxWrapLines - lines.count() ) );
             const QStringList chunkLines = logData->getExpandedLines(
                     firstLine + lines.count(), chunk );
             foreach ( const QString& l, chunkLines ) {
@@ -1791,9 +1828,10 @@ void AbstractLogView::drawTextArea( QPaintDevice* paint_device, int32_t )
             backColor = palette.color( QPalette::Highlight );
             painter.setPen(palette.color(QPalette::Text));
         }
-        else if ( filterSet->matchLine( logData->getLineString( line_index ),
-                    &foreColor, &backColor ) ) {
-            // Apply a filter to the line
+        else if ( filterSet_->matchLine( line, &foreColor, &backColor ) ) {
+            // Apply a filter to the line. The line is matched with its tabs
+            // expanded, which saves re-reading it from the file just for
+            // this test.
         }
         else {
             // Use the default colors
@@ -1871,12 +1909,14 @@ void AbstractLogView::drawTextArea( QPaintDevice* paint_device, int32_t )
                             fore = foreColor;
                             back = backColor;
                             break;
-                        case LineChunk::Highlighted:
-                            fore = QColor( "black" );
-                            back = QColor( "yellow" );
-                            // fore = highlightForeColor;
-                            // back = highlightBackColor;
+                        case LineChunk::Highlighted: {
+                            // Parsed once, not on every chunk of every row
+                            static const QColor highlightFore( "black" );
+                            static const QColor highlightBack( "yellow" );
+                            fore = highlightFore;
+                            back = highlightBack;
                             break;
+                        }
                         case LineChunk::Selected:
                             fore = palette.color( QPalette::HighlightedText ),
                                  back = palette.color( QPalette::Highlight );
@@ -1927,7 +1967,7 @@ void AbstractLogView::drawTextArea( QPaintDevice* paint_device, int32_t )
             // For pretty circles
             painter.setRenderHint( QPainter::Antialiasing );
 
-            if ( lineType( line_index ) == Match )
+            if ( line_type == Match )
                 painter.setBrush( matchBulletBrush );
             else
                 painter.setBrush( normalBulletBrush );

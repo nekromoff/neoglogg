@@ -90,6 +90,9 @@ class CrawlerWidget : public QSplitter,
     void setEncoding( Encoding encoding );
 
   protected:
+    // To catch Escape in the search box (clears the search)
+    bool eventFilter( QObject* obj, QEvent* event ) override;
+
     // Implementation of the ViewInterface functions
     virtual void doSetData(
             std::shared_ptr<LogData> log_data,
@@ -138,6 +141,8 @@ class CrawlerWidget : public QSplitter,
   private slots:
     // Instructs the widget to start a search using the current search line.
     void startNewSearch();
+    // Give the focus back to the search box, selecting its text
+    void returnFocusToSearch();
     // Stop the currently ongoing search (if one exists)
     void stopSearch();
     // The button next to the search line. Stops the search while one is

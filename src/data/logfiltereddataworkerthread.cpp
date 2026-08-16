@@ -40,10 +40,27 @@ namespace {
 // append) on the direct path.
 const int minChunksToParallelise = 2;
 
+// Visible length of a line once tabs are expanded, computed from the text
+// we already have. This must stay consistent with AbstractLogData::untabify().
+int expandedLength( const QString& line )
+{
+    int length = 0;
+
+    for ( const QChar c : line ) {
+        if ( c == QChar('\t') )
+            length += AbstractLogData::tabStop
+                - ( length % AbstractLogData::tabStop );
+        else
+            length++;
+    }
+
+    return length;
+}
+
 // Search a single chunk of lines. Runs in a pool thread, and only touches
 // the chunk it was given, the (read-only) log data and the regexp.
 void searchChunk( const LogData* logData, const QRegularExpression& regexp,
-        SearchChunk* chunk, const bool* interruptRequested )
+        SearchChunk* chunk, const std::atomic_bool* interruptRequested )
 {
     chunk->maxLength = 0;
     chunk->completed = false;
@@ -55,9 +72,10 @@ void searchChunk( const LogData* logData, const QRegularExpression& regexp,
 
     for ( int j = 0; j < lines.size(); j++ ) {
         if ( regexp.match( lines[j] ).hasMatch() ) {
-            // FIXME: increase perf by removing temporary
-            const int length =
-                logData->getExpandedLineString( chunk->firstLine + j ).length();
+            // Compute the expanded length from the line we already fetched
+            // rather than re-reading it from the file, which would serialise
+            // every pool thread on the file mutex.
+            const int length = expandedLength( lines[j] );
             if ( length > chunk->maxLength )
                 chunk->maxLength = length;
             chunk->matches.push_back( MatchingLine( chunk->firstLine + j ) );
@@ -72,7 +90,8 @@ class SearchChunkRunnable : public QRunnable
 {
   public:
     SearchChunkRunnable( const LogData* logData, const QRegularExpression& regexp,
-            SearchChunk* chunk, const bool* interruptRequested, QSemaphore* done )
+            SearchChunk* chunk, const std::atomic_bool* interruptRequested,
+            QSemaphore* done )
         : logData_( logData ), regexp_( regexp ), chunk_( chunk ),
           interruptRequested_( interruptRequested ), done_( done )
     { setAutoDelete( false ); }
@@ -87,31 +106,38 @@ class SearchChunkRunnable : public QRunnable
     const LogData* logData_;
     const QRegularExpression& regexp_;
     SearchChunk* chunk_;
-    const bool* interruptRequested_;
+    const std::atomic_bool* interruptRequested_;
     QSemaphore* done_;
 };
 
 } // namespace
 
 void SearchData::getAll( int* length, SearchResultArray* matches,
-        qint64* lines) const
+        qint64* lines, uint64_t* revision ) const
 {
     QMutexLocker locker( &dataMutex_ );
 
     *length  = maxLength_;
     *lines   = nbLinesProcessed_;
 
-    // This is a copy (potentially slow)
-    *matches = matches_;
-}
+    if ( *revision != revision_ ) {
+        // The caller's copy comes from a different search: full copy.
+        *matches  = matches_;
+        *revision = revision_;
+    }
+    else {
+        // Same search: the caller's copy is a prefix of ours, give it only
+        // what it is missing. Since a search only ever appends (and
+        // deleteMatch() only removes the final match), this turns the
+        // former quadratic copy-everything-per-progress-tick into an
+        // append of the new matches.
+        if ( matches->size() > matches_.size() )
+            matches->erase( std::begin( *matches ) + matches_.size(),
+                    std::end( *matches ) );
 
-void SearchData::setAll( int length,
-        SearchResultArray&& matches )
-{
-    QMutexLocker locker( &dataMutex_ );
-
-    maxLength_  = length;
-    matches_    = matches;
+        matches->insert( std::end( *matches ),
+                std::begin( matches_ ) + matches->size(), std::end( matches_ ) );
+    }
 }
 
 void SearchData::addAll( int length,
@@ -162,6 +188,9 @@ void SearchData::clear()
     maxLength_        = 0;
     nbLinesProcessed_ = 0;
     matches_.clear();
+
+    // Invalidate the prefix-copies held by callers of getAll().
+    ++revision_;
 }
 
 LogFilteredDataWorkerThread::LogFilteredDataWorkerThread(
@@ -244,7 +273,7 @@ void LogFilteredDataWorkerThread::interrupt()
 {
     LOG(logDEBUG) << "Search interruption requested";
 
-    // No mutex here, setting a bool is probably atomic!
+    // No mutex needed, the flag is atomic
     interruptRequested_ = true;
 
     // We wait for the interruption to be done
@@ -255,11 +284,13 @@ void LogFilteredDataWorkerThread::interrupt()
     }
 }
 
-// This will do an atomic copy of the object
+// Atomically bring the caller's copy up to date with the search data,
+// copying only the new matches when the copy is from the same search.
 void LogFilteredDataWorkerThread::getSearchResult(
-        int* maxLength, SearchResultArray* searchMatches, qint64* nbLinesProcessed )
+        int* maxLength, SearchResultArray* searchMatches, qint64* nbLinesProcessed,
+        uint64_t* revision )
 {
-    searchData_.getAll( maxLength, searchMatches, nbLinesProcessed );
+    searchData_.getAll( maxLength, searchMatches, nbLinesProcessed, revision );
 }
 
 // This is the thread's main loop
@@ -298,7 +329,7 @@ void LogFilteredDataWorkerThread::run()
 //
 
 SearchOperation::SearchOperation( const LogData* sourceLogData,
-        const QRegularExpression& regExp, bool* interruptRequest,
+        const QRegularExpression& regExp, std::atomic_bool* interruptRequest,
         QThreadPool* threadPool, const SearchRange& range )
     : regexp_( regExp ), sourceLogData_( sourceLogData ), range_( range ),
       threadPool_( threadPool )

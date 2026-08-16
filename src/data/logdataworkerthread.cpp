@@ -18,6 +18,8 @@
  * along with neoglogg.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <cstring>
+
 #include <QFile>
 
 #include "log.h"
@@ -56,6 +58,22 @@ qint64 IndexingData::getPosForLine( LineNumber line ) const
     return linePosition_.at( line );
 }
 
+std::vector<qint64> IndexingData::getPosForLines( LineNumber first_line,
+        int number ) const
+{
+    QMutexLocker locker( &dataMutex_ );
+
+    std::vector<qint64> positions;
+    positions.reserve( number );
+
+    // Sequential reads hit the storage's read cache, so this walk is
+    // linear in 'number', not quadratic.
+    for ( int i = 0; i < number; ++i )
+        positions.push_back( linePosition_.at( first_line + i ) );
+
+    return positions;
+}
+
 EncodingSpeculator::Encoding IndexingData::getEncodingGuess() const
 {
     QMutexLocker locker( &dataMutex_ );
@@ -79,6 +97,12 @@ void IndexingData::addAll( qint64 size, int length,
 
 void IndexingData::clear()
 {
+    // Called from the worker thread at the start of a full (re)index while
+    // the GUI thread can be reading, so it must lock like every other
+    // accessor: the old storage is freed here, an unprotected concurrent
+    // read would be a use-after-free.
+    QMutexLocker locker( &dataMutex_ );
+
     maxLength_   = 0;
     indexedSize_ = 0;
     linePosition_ = LinePositionArray();
@@ -147,7 +171,7 @@ void LogDataWorkerThread::interrupt()
 {
     LOG(logDEBUG) << "Load interrupt requested";
 
-    // No mutex here, setting a bool is probably atomic!
+    // No mutex needed, the flag is atomic
     interruptRequested_ = true;
 }
 
@@ -196,7 +220,7 @@ void LogDataWorkerThread::run()
 //
 
 IndexOperation::IndexOperation( const QString& fileName,
-        IndexingData* indexingData, bool* interruptRequest,
+        IndexingData* indexingData, std::atomic_bool* interruptRequest,
         EncodingSpeculator* encodingSpeculator )
     : fileName_( fileName )
 {
@@ -219,48 +243,58 @@ void IndexOperation::doIndex( IndexingData* indexing_data,
         file.seek( pos );
         while ( !file.atEnd() ) {
             FastLinePositionArray line_positions;
+            // A guess at the number of lines in the chunk (assuming lines
+            // of 64 bytes) to avoid repeated re-allocations while scanning.
+            line_positions.reserve( sizeChunk / 64 );
             int max_length = 0;
 
-            if ( *interruptRequest_ )   // a bool is always read/written atomically isn't it?
+            if ( *interruptRequest_ )
                 break;
 
             // Read a chunk of 5MB
             const qint64 block_beginning = file.pos();
             const QByteArray block = file.read( sizeChunk );
+            const char* const data = block.constData();
+            const int block_size = static_cast<int>( block.length() );
 
-            // Count the number of lines in each chunk
-            qint64 pos_within_block = 0;
-            while ( pos_within_block != -1 ) {
-                pos_within_block = qMax( pos - block_beginning, 0LL);
-                // Looking for the next \n, expanding tabs in the process
-                do {
-                    if ( pos_within_block < block.length() ) {
-                        const char c = block.at(pos_within_block);
-                        encoding_speculator->inject_byte( c );
-                        if ( c == '\n' )
-                            break;
-                        else if ( c == '\t' )
-                            additional_spaces += AbstractLogData::tabStop -
-                                ( ( ( block_beginning - pos ) + pos_within_block
-                                    + additional_spaces ) % AbstractLogData::tabStop ) - 1;
+            // Feed the whole chunk to the speculator in one call; the
+            // line scan below then only has to look for \n and \t, which
+            // memchr does far faster than a byte-at-a-time loop.
+            encoding_speculator->inject_block( data, block_size );
 
-                        pos_within_block++;
-                    }
-                    else {
-                        pos_within_block = -1;
-                    }
-                } while ( pos_within_block != -1 );
+            int scan_pos = static_cast<int>( qMax( pos - block_beginning, 0LL ) );
+            while ( scan_pos < block_size ) {
+                const char* nl = static_cast<const char*>(
+                        memchr( data + scan_pos, '\n', block_size - scan_pos ) );
+                const int line_end = nl ?
+                        static_cast<int>( nl - data ) : block_size;
 
-                // When a end of line has been found...
-                if ( pos_within_block != -1 ) {
-                    end = pos_within_block + block_beginning;
-                    const int length = end-pos + additional_spaces;
-                    if ( length > max_length )
-                        max_length = length;
-                    pos = end + 1;
-                    additional_spaces = 0;
-                    line_positions.append( pos );
+                // Expand the tabs of the current line (or the part of it
+                // that lies in this chunk)
+                const char* tab = data + scan_pos;
+                const char* const seg_end = data + line_end;
+                while ( ( tab = static_cast<const char*>(
+                        memchr( tab, '\t', seg_end - tab ) ) ) ) {
+                    // Column of the tab once the line is expanded so far
+                    const qint64 column = ( block_beginning + ( tab - data ) )
+                            - pos + additional_spaces;
+                    additional_spaces += AbstractLogData::tabStop -
+                            static_cast<int>( column % AbstractLogData::tabStop ) - 1;
+                    ++tab;
                 }
+
+                if ( ! nl )
+                    break;      // Line continues in the next chunk
+
+                end = block_beginning + line_end;
+                const int length = end-pos + additional_spaces;
+                if ( length > max_length )
+                    max_length = length;
+                pos = end + 1;
+                additional_spaces = 0;
+                line_positions.append( pos );
+
+                scan_pos = line_end + 1;
             }
 
             // Update the shared data

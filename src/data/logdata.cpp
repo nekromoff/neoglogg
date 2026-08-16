@@ -256,6 +256,11 @@ void LogData::fileChangedOnDisk()
 
 void LogData::indexingFinished( LoadingStatus status )
 {
+    // The content may have changed (full reindex after truncation, or the
+    // last line of a non-LF-terminated file getting longer), drop the
+    // cached line lengths.
+    lineLengthCache_.assign( lineLengthCacheSize, { -1, 0 } );
+
     LOG(logDEBUG) << "indexingFinished: " <<
         ( status == LoadingStatus::Successful ) <<
         ", found " << indexing_data_.getNbLines() << " lines.";
@@ -309,7 +314,16 @@ int LogData::doGetLineLength( qint64 line ) const
 {
     if ( line >= indexing_data_.getNbLines() ) { return 0; /* exception? */ }
 
-    int length = doGetExpandedLineString( line ).length();
+    // Computing the length means reading and expanding the line from the
+    // file; in wrapped mode this is called per line for the row-count
+    // arithmetic on every paint/scroll, so a small direct-mapped cache
+    // keeps the file out of that path. Only used from the GUI thread.
+    auto& entry = lineLengthCache_[ line % lineLengthCacheSize ];
+    if ( entry.line == line )
+        return entry.length;
+
+    const int length = doGetExpandedLineString( line ).length();
+    entry = { line, length };
 
     return length;
 }
@@ -450,11 +464,20 @@ QStringList LogData::doGetLines( qint64 first_line, int number ) const
         return QStringList(); /* exception? */
     }
 
+    // Fetch every position we need under a single lock, rather than
+    // taking the indexing mutex once per line below.
+    const qint64 pos_first_line = ( first_line == 0 ) ? 0 : first_line - 1;
+    const std::vector<qint64> positions = indexing_data_.getPosForLines(
+            pos_first_line, number + ( ( first_line == 0 ) ? 0 : 1 ) );
+    const auto end_of_line = [&positions, pos_first_line, this]( qint64 line ) {
+        return positions[ line - pos_first_line ] - 1 - before_cr_offset_;
+    };
+
     fileMutex_.lock();
 
     const qint64 first_byte = (first_line == 0) ?
-        0 : ( indexing_data_.getPosForLine( first_line-1 ) + after_cr_offset_ );
-    const qint64 end_byte  = endOfLinePosition( last_line );
+        0 : ( positions[0] + after_cr_offset_ );
+    const qint64 end_byte  = end_of_line( last_line );
     // LOG(logDEBUG) << "LogData::doGetLines first_byte:" << first_byte << " end_byte:" << end_byte;
     attached_file_->seek( first_byte );
     QByteArray blob = attached_file_->read( end_byte - first_byte );
@@ -464,7 +487,7 @@ QStringList LogData::doGetLines( qint64 first_line, int number ) const
     qint64 beginning = 0;
     qint64 end = 0;
     for ( qint64 line = first_line; (line <= last_line); line++ ) {
-        end = endOfLinePosition( line ) - first_byte;
+        end = end_of_line( line ) - first_byte;
         // LOG(logDEBUG) << "Getting line " << line << " beginning " << beginning << " end " << end;
         QByteArray this_line = blob.mid( beginning, end - beginning );
         // LOG(logDEBUG) << "Line is: " << QString( this_line ).toStdString();
@@ -489,12 +512,21 @@ QStringList LogData::doGetExpandedLines( qint64 first_line, int number ) const
         return QStringList(); /* exception? */
     }
 
+    // Fetch every position we need under a single lock, rather than
+    // taking the indexing mutex once per line below.
+    const qint64 pos_first_line = ( first_line == 0 ) ? 0 : first_line - 1;
+    const std::vector<qint64> positions = indexing_data_.getPosForLines(
+            pos_first_line, number + ( ( first_line == 0 ) ? 0 : 1 ) );
+    const auto end_of_line = [&positions, pos_first_line, this]( qint64 line ) {
+        return positions[ line - pos_first_line ] - 1 - before_cr_offset_;
+    };
+
     fileMutex_.lock();
 
     // end_byte is non-inclusive.(is not read)
     const qint64 first_byte = (first_line == 0) ?
-        0 : ( indexing_data_.getPosForLine( first_line-1 ) + after_cr_offset_ );
-    const qint64 end_byte  = endOfLinePosition( last_line );
+        0 : ( positions[0] + after_cr_offset_ );
+    const qint64 end_byte  = end_of_line( last_line );
     LOG(logDEBUG) << "LogData::doGetExpandedLines first_byte:" << first_byte << " end_byte:" << end_byte;
 
     attached_file_->seek( first_byte );
@@ -506,8 +538,7 @@ QStringList LogData::doGetExpandedLines( qint64 first_line, int number ) const
     qint64 end = 0;
     for ( qint64 line = first_line; (line <= last_line); line++ ) {
         // end is non-inclusive
-        // LOG(logDEBUG) << "EoL " << line << ": " << indexing_data_.getPosForLine( line );
-        end = endOfLinePosition( line ) - first_byte;
+        end = end_of_line( line ) - first_byte;
         // LOG(logDEBUG) << "Getting line " << line << " beginning " << beginning << " end " << end;
         QByteArray this_line = blob.mid( beginning, end - beginning );
         QString conv_line = codec_->toUnicode( this_line );

@@ -36,7 +36,7 @@ void SessionInfo::retrieveFromStorage( QSettings& settings )
         openFiles_.clear();
         // Unserialise the "new style" stored history
         settings.beginGroup( "OpenFiles" );
-        if ( settings.value( "version" ) == OPENFILES_VERSION ) {
+        if ( settings.value( "version" ).toInt() == OPENFILES_VERSION ) {
             int size = settings.beginReadArray( "openFiles" );
             LOG(logDEBUG) << "SessionInfo: " << size << " files.";
             for (int i = 0; i < size; ++i) {

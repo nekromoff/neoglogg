@@ -22,6 +22,8 @@
 #ifndef ABSTRACTLOGVIEW_H
 #define ABSTRACTLOGVIEW_H
 
+#include <memory>
+
 #include <QAbstractScrollArea>
 #include <QBasicTimer>
 
@@ -29,6 +31,7 @@
 #  include "perfcounter.h"
 #endif
 
+#include "filterset.h"
 #include "selection.h"
 #include "quickfind.h"
 #include "overviewwidget.h"
@@ -239,6 +242,9 @@ class AbstractLogView :
     // Sent up when the user want to exit this view
     // (switch to the next one)
     void exitView();
+    // Sent when the user presses Escape in the view (e.g. to send the
+    // focus back to the search box)
+    void escapePressed();
 
   public slots:
     // Makes the widget select and display the passed line.
@@ -374,14 +380,18 @@ class AbstractLogView :
     // Popup menu
     QMenu* popupMenu_;
     QAction* copyAction_;
-    QAction* findNextAction_;
-    QAction* findPreviousAction_;
     QAction* addToSearchAction_;
 
     // Pointer to the CrawlerWidget's QFP object
     const QuickFindPattern* const quickFindPattern_;
     // Our own QuickFind object
     QuickFind quickFind_;
+
+    // The filter set, fetched from the persistent registry once on first
+    // paint rather than on every repaint. The registered object is
+    // updated in place when the user edits the filters, so the pointer
+    // stays valid and current for the life of the view.
+    mutable std::shared_ptr<const FilterSet> filterSet_;
 
 #ifdef NEOGLOGG_PERF_MEASURE_FPS
     // Performance measurement

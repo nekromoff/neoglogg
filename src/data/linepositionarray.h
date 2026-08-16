@@ -59,6 +59,10 @@ class LinePosition
         array.push_back( pos );
         fakeFinalLF_ = false;
     }
+    // Pre-allocate room for the given number of lines. Only available
+    // when the underlying storage supports it (i.e. FastLinePositionArray).
+    inline void reserve( size_t nb_lines )
+    { array.reserve( nb_lines ); }
     // Size of the array
     inline int size() const
     { return array.size(); }

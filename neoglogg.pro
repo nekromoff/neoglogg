@@ -248,6 +248,16 @@ else {
     QMAKE_CXXFLAGS += -DNEOGLOGG_VERSION=\\\"$$VERSION\\\"
 }
 
+# On Windows qmake copies VERSION into the generated .rc as FILEVERSION,
+# which windres only accepts as numbers and dots. CI builds pass a version
+# like "ci-1a2b3c4d", which produced an .rc that failed to compile. The
+# string above already carries the real version into the binary, so the
+# resource just falls back to 0.0.0 when VERSION is not numeric.
+win32:!isEmpty(VERSION):!contains(VERSION, "^[0-9]+([.][0-9]+)*$") {
+    message("VERSION '$$VERSION' is not numeric, using 0.0.0 for the Windows resource")
+    VERSION = 0.0.0
+}
+
 # Optional features (e.g. CONFIG+=no-dbus)
 # qtHaveModule asks the Qt actually being built against, rather than
 # pkg-config, which probed a fixed Qt version regardless of the Qt in use.

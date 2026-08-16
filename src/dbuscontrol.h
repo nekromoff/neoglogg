@@ -25,5 +25,5 @@ class DBusControl : public QObject {
   Q_OBJECT
 
   public slots:
-    QString version(void) { return "1.0.0"; }
+    QString version(void) { return QString( NEOGLOGG_VERSION ); }
 };

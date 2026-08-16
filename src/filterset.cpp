@@ -217,7 +217,7 @@ void FilterSet::retrieveFromStorage( QSettings& settings )
 
     if ( settings.contains( "FilterSet/version" ) ) {
         settings.beginGroup( "FilterSet" );
-        if ( settings.value( "version" ) == FILTERSET_VERSION ) {
+        if ( settings.value( "version" ).toInt() == FILTERSET_VERSION ) {
             int size = settings.beginReadArray( "filters" );
             for (int i = 0; i < size; ++i) {
                 settings.setArrayIndex(i);

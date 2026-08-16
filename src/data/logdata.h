@@ -22,6 +22,7 @@
 #define LOGDATA_H
 
 #include <memory>
+#include <vector>
 
 #include <QObject>
 #include <QString>
@@ -191,6 +192,17 @@ class LogData : public AbstractLogData {
     // (are mutable to allow 'const' function to touch it,
     // while remaining const)
     // When acquiring both, data should be help before locking file.
+
+    // Small direct-mapped cache of expanded line lengths, to keep
+    // doGetLineLength() (called per line when wrapping) away from the
+    // file. GUI thread only; invalidated whenever indexing finishes.
+    struct LineLengthCacheEntry {
+        qint64 line;
+        int length;
+    };
+    static const int lineLengthCacheSize = 1024;
+    mutable std::vector<LineLengthCacheEntry> lineLengthCache_ =
+        std::vector<LineLengthCacheEntry>( lineLengthCacheSize, { -1, 0 } );
 
     LogDataWorkerThread workerThread_;
 };

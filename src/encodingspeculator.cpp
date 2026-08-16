@@ -22,6 +22,20 @@
 
 #include <iostream>
 
+void EncodingSpeculator::inject_block( const char* data, size_t size )
+{
+    // One call per block instead of one per byte: the per-byte state
+    // machine is unchanged, but the call overhead disappears from the
+    // indexing hot loop and the ASCII fast path below skips the switch
+    // entirely for pure 7-bit stretches (the overwhelmingly common case).
+    for ( size_t i = 0; i < size; ++i ) {
+        const uint8_t byte = static_cast<uint8_t>( data[i] );
+        if ( ( ! ( byte & 0x80 ) ) && ( state_ == State::ASCIIOnly ) )
+            continue;
+        inject_byte( byte );
+    }
+}
+
 void EncodingSpeculator::inject_byte( uint8_t byte )
 {
     if ( ! ( byte & 0x80 ) ) {

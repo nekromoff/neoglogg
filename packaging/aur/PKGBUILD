@@ -1,0 +1,30 @@
+# Maintainer: Daniel Duris <dusoft@staznosti.sk>
+#
+# This is the source of the AUR package. The release workflow rewrites
+# pkgver and the checksum from the tag, then pushes this file plus a
+# regenerated .SRCINFO to ssh://aur@aur.archlinux.org/neoglogg.git
+#
+pkgname=neoglogg
+pkgver=1.1
+pkgrel=1
+pkgdesc="The fast, smart log explorer (maintained fork of glogg, ported to Qt 6)"
+arch=('x86_64')
+url="https://github.com/nekromoff/neoglogg"
+license=('GPL-3.0-or-later')
+depends=('qt6-base' 'qt6-5compat' 'boost-libs' 'hicolor-icon-theme')
+makedepends=('qt6-tools' 'boost')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+    cd "$pkgname-$pkgver"
+    # The .pro installs the binary, .desktop, icons, docs and the AppStream
+    # metainfo under PREFIX; DESTDIR redirects them at install time.
+    qmake6 neoglogg.pro PREFIX=/usr VERSION="$pkgver"
+    make
+}
+
+package() {
+    cd "$pkgname-$pkgver"
+    make install INSTALL_ROOT="$pkgdir"
+}

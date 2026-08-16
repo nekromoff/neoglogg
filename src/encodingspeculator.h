@@ -21,6 +21,7 @@
 #ifndef ENCODINGSPECULATOR_H
 #define ENCODINGSPECULATOR_H
 
+#include <cstddef>
 #include <cstdint>
 
 // The encoder speculator tries to determine the likely encoding
@@ -44,6 +45,10 @@ class EncodingSpeculator {
 
     // Inject one byte into the speculator
     void inject_byte( uint8_t byte );
+
+    // Inject a whole block of bytes, equivalent to calling inject_byte()
+    // on each in turn but much cheaper on the indexing hot path
+    void inject_block( const char* data, size_t size );
 
     // Returns the current guess based on the previously injected bytes
     Encoding guess() const;

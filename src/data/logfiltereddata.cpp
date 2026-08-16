@@ -25,6 +25,7 @@
 #include "log.h"
 
 #include <QString>
+#include <algorithm>
 #include <cassert>
 #include <limits>
 
@@ -128,6 +129,9 @@ void LogFilteredData::clearSearch()
     matching_lines_.clear();
     maxLength_        = 0;
     nbLinesProcessed_ = 0;
+    // Our (now empty) copy no longer mirrors the worker's data, so the
+    // next getSearchResult() must do a full copy, not a prefix append.
+    searchResultsRevision_ = 0;
     filteredItemsCacheDirty_ = true;
 }
 
@@ -290,9 +294,26 @@ void LogFilteredData::handleSearchProgressed( int nbMatches, int progress, qint6
     LOG(logDEBUG) << "LogFilteredData::handleSearchProgressed matches="
         << nbMatches << " progress=" << progress;
 
+    const size_t oldNbMatches = matching_lines_.size();
+    const uint64_t oldRevision = searchResultsRevision_;
+
     // searchDone_ = true;
-    workerThread_.getSearchResult( &maxLength_, &matching_lines_, &nbLinesProcessed_ );
-    filteredItemsCacheDirty_ = true;
+    workerThread_.getSearchResult( &maxLength_, &matching_lines_,
+            &nbLinesProcessed_, &searchResultsRevision_ );
+
+    // Maintain the marks+matches cache incrementally when we can: during a
+    // long search this slot runs on every progress tick, and a full, lazy
+    // regeneration on each tick is quadratic overall. The incremental path
+    // needs a valid cache and a fetch that only appended (same revision,
+    // no truncation).
+    if ( filteredItemsCacheDirty_
+            || ( searchResultsRevision_ != oldRevision )
+            || ( matching_lines_.size() < oldNbMatches ) ) {
+        filteredItemsCacheDirty_ = true;
+    }
+    else {
+        insertNewMatchesInFilteredItemsCache( oldNbMatches );
+    }
 
     emit searchProgressed( nbMatches, progress, initial_position );
 }
@@ -437,7 +458,9 @@ int LogFilteredData::doGetMaxLength() const
 int LogFilteredData::doGetLineLength( qint64 lineNum ) const
 {
     qint64 line = findLogDataLine( lineNum );
-    return sourceLogData_->getExpandedLineString( line ).length();
+    // Same result as measuring getExpandedLineString() here, but going
+    // through the source lets it use its line length cache.
+    return sourceLogData_->getLineLength( line );
 }
 
 void LogFilteredData::doSetDisplayEncoding( Encoding encoding )
@@ -487,4 +510,49 @@ void LogFilteredData::regenerateFilteredItemsCache() const
     filteredItemsCacheDirty_ = false;
 
     LOG(logDEBUG) << "finished regenerateFilteredItemsCache";
+}
+
+// Merge the matches appended since the cache was last valid into the cache,
+// instead of rebuilding it from scratch. Only called when the cache is
+// clean and matching_lines_ has purely grown (checked by the caller).
+void LogFilteredData::insertNewMatchesInFilteredItemsCache( size_t oldNbMatches )
+{
+    if ( oldNbMatches == matching_lines_.size() )
+        return;
+
+    const qint64 firstNewLine = matching_lines_[ oldNbMatches ].lineNumber();
+
+    // Pop the cache entries at or past the first new match; they can only
+    // be marks, since every match already in the cache is older and search
+    // matches arrive in ascending line order.
+    std::vector<FilteredItem> tailMarks;
+    while ( !filteredItemsCache_.empty()
+            && ( filteredItemsCache_.back().lineNumber() >= firstNewLine ) ) {
+        tailMarks.push_back( filteredItemsCache_.back() );
+        filteredItemsCache_.pop_back();
+    }
+    std::reverse( tailMarks.begin(), tailMarks.end() );
+
+    // Same merge as regenerateFilteredItemsCache(), marks winning ties.
+    auto i = matching_lines_.cbegin() + oldNbMatches;
+    auto j = tailMarks.cbegin();
+
+    while ( ( i != matching_lines_.cend() ) || ( j != tailMarks.cend() ) ) {
+        qint64 next_mark =
+            ( j != tailMarks.cend() ) ? j->lineNumber() : std::numeric_limits<qint64>::max();
+        qint64 next_match =
+            ( i != matching_lines_.cend() ) ? i->lineNumber() : std::numeric_limits<qint64>::max();
+        if ( next_mark <= next_match ) {
+            filteredItemsCache_.push_back( FilteredItem( next_mark, Mark ) );
+            if ( j != tailMarks.cend() )
+                ++j;
+            if ( ( next_mark == next_match ) && ( i != matching_lines_.cend() ) )
+                ++i;  // Case when it's both match and mark.
+        }
+        else {
+            filteredItemsCache_.push_back( FilteredItem( next_match, Match ) );
+            if ( i != matching_lines_.cend() )
+                ++i;
+        }
+    }
 }

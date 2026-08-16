@@ -1,6 +1,5 @@
-neoglogg (0.0.0) unstable; urgency=medium
+neoglogg (1.1) unstable; urgency=medium
 
-  * Placeholder entry. The release workflow rewrites this from the git tag
-    before building, so the version here is never what ships.
+  * Local build.
 
- -- Daniel Duris <dusoft@staznosti.sk>  Sun, 16 Aug 2026 12:00:00 +0200
+ -- Daniel Duris <dusoft@staznosti.sk>  Sun, 16 Aug 2026 17:36:31 +0200
