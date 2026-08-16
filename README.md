@@ -76,9 +76,8 @@ See Releases: https://github.com/nekromoff/neoglogg/releases/
   `program_options` from source via `BOOST_PATH` and packages with
   `macdeployqt -dmg`, so neither Homebrew Boost nor `node`/`appdmg` is
   required; `release-osx.sh` remains for the older local flow.
-* **Tests:** CMake (3.16+), Qt 6 (including Core5Compat and Test) and the
-  Google Mock sources (`GMOCK_HOME`), see below. Not built since the Qt 6
-  port, and not run by CI.
+* **Tests:** CMake (3.16+) and Qt 6 (including Core5Compat and Test).
+  GoogleTest is downloaded automatically at configure time.
 
 Development happens on Linux; CI compiles Linux, Windows and macOS, but only
 Linux is tested by hand.
@@ -116,20 +115,19 @@ extracted.
 
 ## Tests
 
-The tests are built using CMake (3.16 or later), and require Qt 6 (with the
-Core5Compat and Test modules) and the Google Mock source (pointed to by
-`GMOCK_HOME`).
+The tests are built using CMake (3.16 or later) and require Qt 6 (with the
+Core5Compat and Test modules). GoogleTest is fetched at configure time, so
+there is nothing to install or point at first — only a network connection on
+the first configure.
 
 ```
-cd tests
-mkdir build
-cd build
-export QT_DIR=/path/to/qt/if/non/standard
-export GMOCK_HOME=/path/to/gmock
-cmake ..
-make
-./neoglogg_tests
+cmake -S tests -B tests/build
+cmake --build tests/build --target neoglogg_tests -j$(nproc)
+QT_QPA_PLATFORM=offscreen ./tests/build/neoglogg_tests
 ```
+
+The WatchTower tests create files under `/tmp` to trigger real inotify
+events, so they need a writable temporary directory.
 
 ## Releases
 
@@ -146,9 +144,8 @@ a **draft** GitHub Release for review before publishing.
 
 `.github/workflows/ci.yml` compiles on Linux, Windows and macOS. It runs on
 tags and on manual dispatch from the Actions tab, not on ordinary pushes, so
-doc-only commits do not trigger a three-platform build. It does not run the
-test suite: `tests/CMakeLists.txt` still expects a hand-built Google Mock via
-`$GMOCK_HOME`.
+doc-only commits do not trigger a three-platform build. The Linux job also builds and runs the test
+suite.
 
 The AppImage is built on Ubuntu 24.04, because Qt 6's 5compat module (needed
 for the legacy text codecs) is not packaged before then. An AppImage bundles

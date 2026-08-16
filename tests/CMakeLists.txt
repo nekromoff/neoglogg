@@ -57,18 +57,29 @@ check_symbol_exists( symlink "unistd.h" HAVE_SYMLINK )
 # find_library(WS2_LIBRARY NAMES ws2_32)
 
 # Libs
+#
+# GoogleTest is fetched at configure time rather than expected in $GMOCK_HOME
+# as a hand-built tree, so the suite builds anywhere with a network connection
+# and nothing to set up first.
 
-set(LIBS gmock gtest)
+include(FetchContent)
+FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG        v1.15.2
+    GIT_SHALLOW    TRUE
+)
+# Keep googletest's own tests and install rules out of this build.
+set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+set(BUILD_GMOCK ON CACHE BOOL "" FORCE)
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+set(LIBS GTest::gmock GTest::gtest)
 
 # Setup testing
 enable_testing()
-include_directories(
-    $ENV{GMOCK_HOME}/include
-    $ENV{GMOCK_HOME}/gtest/include
-    $ENV{BOOST_ROOT}/
-    ../src/
-)
-link_directories($ENV{GMOCK_HOME}/mybuild $ENV{GMOCK_HOME}/mybuild/gtest)
+include_directories(../src/)
 
 # Sources
 set(neoglogg_SOURCES
@@ -110,6 +121,8 @@ set(neoglogg_SOURCES
     ../src/encodingspeculator.cpp
     ../src/platformfilewatcher.cpp
     ../src/filewatcher.cpp
+    ../src/qtfilewatcher.cpp
+    ../src/theme.cpp
 )
 
 set(neoglogg_HEADERS
@@ -144,12 +157,15 @@ if (WIN32)
     set(FileWatcherEngine_SOURCES
         ../src/winwatchtowerdriver.cpp
     )
-elseif (LINUX)
-    # set(FileWatcherEngine_SOURCES ../src/inotifywatchtowerdriver.cpp)
 elseif (APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNEOGLOGG_SUPPORTS_KQUEUE")
     set(FileWatcherEngine_SOURCES
          ../src/kqueuewatchtowerdriver.cpp
+    )
+else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNEOGLOGG_SUPPORTS_INOTIFY")
+    set(FileWatcherEngine_SOURCES
+        ../src/inotifywatchtowerdriver.cpp
     )
 endif (WIN32)
 
@@ -164,7 +180,7 @@ add_executable(neoglogg_tests
 )
 
 # Link test executable against gtest & gtest_main
-target_link_libraries(neoglogg_tests ${LIBS} gtest_main pthread Qt6::Widgets Qt6::Core5Compat)
+target_link_libraries(neoglogg_tests ${LIBS} GTest::gtest_main pthread Qt6::Widgets Qt6::Core5Compat)
 
 add_executable(neoglogg_itests
     ${neoglogg_SOURCES}

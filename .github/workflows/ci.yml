@@ -6,10 +6,6 @@ name: CI
 # Tag-only by choice: ordinary pushes to master are not built, so breakage is
 # caught when a release is cut rather than when it lands. Run this by hand from
 # the Actions tab (workflow_dispatch) to check a branch before tagging.
-#
-# The test suite is deliberately not run here. tests/CMakeLists.txt needs a
-# hand-built gmock via $GMOCK_HOME and does not build unattended; wire it in
-# once that is modernised.
 
 on:
   push:
@@ -40,6 +36,16 @@ jobs:
         run: |
           make install INSTALL_ROOT="$PWD/AppDir"
           find AppDir -type f | sort
+
+      # GoogleTest is fetched by tests/CMakeLists.txt at configure time, so
+      # nothing needs installing first. The WatchTower tests create real files
+      # to trigger inotify, and the widgets need a platform plugin, hence
+      # offscreen.
+      - name: Build and run the test suite
+        run: |
+          cmake -S tests -B tests/build
+          cmake --build tests/build --target neoglogg_tests -j"$(nproc)"
+          QT_QPA_PLATFORM=offscreen ./tests/build/neoglogg_tests
 
   windows:
     name: Windows (MSYS2 MinGW)
