@@ -48,18 +48,24 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            build-essential devscripts debhelper \
+            build-essential debhelper \
             qt6-base-dev qt6-base-dev-tools qt6-5compat-dev libboost-program-options-dev
 
+      # Written directly rather than with dch: the changelog is committed, so
+      # dch --create refuses to overwrite it, and dch also wants
+      # libdistro-info-perl just to validate the distribution name.
       - name: Stamp the changelog with the release version
-        run: |
-          dch --create --package neoglogg \
-              --newversion "${{ needs.version.outputs.version }}" \
-              --distribution unstable --controlmaint \
-              "Release ${{ needs.version.outputs.version }}."
         env:
-          DEBEMAIL: dusoft@staznosti.sk
-          DEBFULLNAME: Daniel Duris
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          cat > debian/changelog <<EOF
+          neoglogg ($VERSION) unstable; urgency=medium
+
+            * Release $VERSION.
+
+           -- Daniel Duris <dusoft@staznosti.sk>  $(date -R)
+          EOF
+          cat debian/changelog
 
       - name: Build the package
         run: dpkg-buildpackage -b -us -uc
