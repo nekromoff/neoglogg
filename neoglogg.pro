@@ -116,6 +116,11 @@ isEmpty(BOOST_PATH) {
       INCLUDEPATH += /usr/local/include
       LIBS += -L/usr/local/lib -lboost_program_options-mt
     }
+    else:win32 {
+      # MSYS2 ships Boost with the multithreaded suffix only, so the
+      # unsuffixed name does not exist there and the link fails.
+      LIBS += -lboost_program_options-mt
+    }
     else {
       LIBS += -lboost_program_options
     }
