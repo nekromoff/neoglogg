@@ -1,4 +1,4 @@
-neoglogg - the fast, smart log explorer. updated and upgraded.
+neoglogg - the fast, smart log explorer. Updated and upgraded.
 =====================================
 
 neoglogg by Daniel Duris, based on glogg by Nicolas Bonnefon, is a multi-platform GUI application that helps browse and search through long and complex log files.  It is designed with programmers and system administrators in mind and can be seen as a graphical, interactive combination of grep and less.
@@ -75,9 +75,11 @@ See Releases: https://github.com/nekromoff/neoglogg/releases/
   `macdeployqt -dmg`, so neither Homebrew Boost nor `node`/`appdmg` is
   required; `release-osx.sh` remains for the older local flow.
 * **Tests:** CMake (3.16+), Qt 6 (including Core5Compat and Test) and the
-  Google Mock sources (`GMOCK_HOME`), see below.
+  Google Mock sources (`GMOCK_HOME`), see below. Not built since the Qt 6
+  port, and not run by CI.
 
-neoglogg has been developed and tested on Linux only so far.
+Development happens on Linux; CI compiles Linux, Windows and macOS, but only
+Linux is tested by hand.
 
 ## Building
 
@@ -87,13 +89,22 @@ recommended:
 ```
 mkdir -p build
 cd build
-qmake6 ../neoglogg.pro
+qmake6 ../neoglogg.pro PREFIX=/usr
 make
-make install INSTALL_ROOT=/usr/local (as root if needed)
+sudo make install
 ```
 
-On Debian/Ubuntu the required packages are `qt6-base-dev`, `qt6-5compat-dev`,
-`qmake6` and `libboost-program-options-dev`.
+`PREFIX` is where the install rules point (binary, `.desktop`, icons, docs);
+it defaults to empty, so passing it is what puts the binary in `/usr/bin`
+rather than `/bin`. `INSTALL_ROOT` is separate and prepends a staging
+directory without changing the recorded paths, which is what the packaging
+scripts use:
+
+```
+make install INSTALL_ROOT=/path/to/staging
+```
+
+See the Requirements section above for the packages needed.
 
 `qmake BOOST_PATH=/path/to/boost/` will statically compile the required parts of
 the Boost libraries whose source are found at the specified path.
@@ -137,12 +148,37 @@ git push origin v1.2.3
 Windows installer plus portable zip, and a macOS `.dmg`, and attaches them to
 a **draft** GitHub Release for review before publishing.
 
-`.github/workflows/ci.yml` compiles on Linux, Windows and macOS for every push
-and pull request. It does not run the test suite: `tests/CMakeLists.txt` still
-expects a hand-built Google Mock via `$GMOCK_HOME`.
+`.github/workflows/ci.yml` compiles on Linux, Windows and macOS. It runs on
+tags and on manual dispatch from the Actions tab, not on ordinary pushes, so
+doc-only commits do not trigger a three-platform build. It does not run the
+test suite: `tests/CMakeLists.txt` still expects a hand-built Google Mock via
+`$GMOCK_HOME`.
 
-The AppImage is built on Ubuntu 22.04 deliberately — it bundles Qt but still
-links the host glibc, which is not forward compatible.
+The AppImage is built on Ubuntu 24.04, because Qt 6's 5compat module (needed
+for the legacy text codecs) is not packaged before then. An AppImage bundles
+Qt but still links the host glibc, which is not forward compatible, so the
+result needs glibc 2.39 or newer. Building on an older base would mean
+installing Qt through aqtinstall rather than apt.
 
 Neither the Windows installer nor the macOS disk image is code-signed, so both
 warn on first launch. On macOS, right-click > Open the first time.
+
+To build an AppImage locally:
+
+```
+VERSION=1.2.3 ./release-appimage.sh
+```
+
+## Icons
+
+Every icon is generated from a single source, `images/hicolor/scalable/neoglogg.svg`,
+plus the monochrome glyph sources in `images/glyphs/`. After editing either, run:
+
+```
+./make-icons.sh
+```
+
+That regenerates the hicolor PNGs, the Qt resource glyphs (light and dark, 1x
+and 2x), `neoglogg.ico`, `images/neoglogg.icns` with its iconset, and the macOS
+disk image background. Do not hand-edit the generated files — they are
+overwritten on the next run. Requires Inkscape and ImageMagick.
