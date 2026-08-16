@@ -23,6 +23,7 @@
 // It also interacts with the sets of data (full and filtered).
 
 #include "log.h"
+#include "theme.h"
 
 #include <cassert>
 
@@ -826,7 +827,7 @@ void CrawlerWidget::setup()
     searchButton->setToolTip( tr("Search the whole file for the text above") );
 
     stopButton = new QToolButton();
-    stopButton->setIcon( QIcon(":/images/stop14.png") );
+    stopButton->setIcon( QIcon( Theme::iconPath( "cross" ) ) );
     stopButton->setAutoRaise( true );
     // Always available: it stops a running search, and clears otherwise.
     stopButton->setEnabled( true );
@@ -835,8 +836,10 @@ void CrawlerWidget::setup()
     QHBoxLayout* searchLineLayout = new QHBoxLayout;
     searchLineLayout->addWidget(searchLabel);
     searchLineLayout->addWidget(searchLineEdit);
-    searchLineLayout->addWidget(searchButton);
+    // Clear/stop sits between the field and Search: it acts on the text to its
+    // left, and keeping Search last puts the primary action at the end of the row.
     searchLineLayout->addWidget(stopButton);
+    searchLineLayout->addWidget(searchButton);
     searchLineLayout->setContentsMargins(6, 0, 6, 0);
     stopButton->setSizePolicy( QSizePolicy( QSizePolicy::Maximum, QSizePolicy::Maximum ) );
     searchButton->setSizePolicy( QSizePolicy( QSizePolicy::Maximum, QSizePolicy::Maximum ) );

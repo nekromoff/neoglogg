@@ -146,51 +146,34 @@ macx {
 }
 else {
     # For Windows icon
-    RC_ICONS = neoglogg48.ico
+    RC_ICONS = neoglogg.ico
     QMAKE_TARGET_COMPANY = "Nicolas Bonnefon"
-    QMAKE_TARGET_DESCRIPTION = "neoglogg - the fast, smart log explorer"
+    QMAKE_TARGET_DESCRIPTION = "neoglogg - the fast, smart log explorer. Updated and upgraded."
 }
 
 RESOURCES = neoglogg.qrc
 
-# Build HTML documentation (if 'markdown' is available)
-system(type markdown >/dev/null) {
-    MARKDOWN += doc/documentation.markdown
-}
-else {
-    message("markdown not found, HTML doc will not be generated")
-}
-
-doc_processor.name = markdown
-doc_processor.input = MARKDOWN
-doc_processor.output = doc/${QMAKE_FILE_BASE}.html
-doc_processor.commands = markdown ${QMAKE_FILE_NAME} >${QMAKE_FILE_OUT}
-
-# Deliberately not target_predeps: the documentation is not needed to run
-# the program, and a missing or broken markdown processor should not stop
-# the build.
-doc_processor.variable_out = doc.files
-
-QMAKE_EXTRA_COMPILERS += doc_processor
-
 # Install (for unix)
-icon16.path  = $$PREFIX/share/icons/hicolor/16x16/apps
-icon16.files = images/hicolor/16x16/neoglogg.png
+icon64.path  = $$PREFIX/share/icons/hicolor/64x64/apps
+icon64.files = images/hicolor/64x64/neoglogg.png
 
-icon32.path  = $$PREFIX/share/icons/hicolor/32x32/apps
-icon32.files = images/hicolor/32x32/neoglogg.png
+icon128.path  = $$PREFIX/share/icons/hicolor/128x128/apps
+icon128.files = images/hicolor/128x128/neoglogg.png
+
+icon256.path  = $$PREFIX/share/icons/hicolor/256x256/apps
+icon256.files = images/hicolor/256x256/neoglogg.png
 
 icon_svg.path  = $$PREFIX/share/icons/hicolor/scalable/apps
 icon_svg.files = images/hicolor/scalable/neoglogg.svg
 
 doc.path  = $$PREFIX/share/doc/neoglogg
-doc.files += README.md COPYING
+doc.files += README.md LICENSE
 
 desktop.path = $$PREFIX/share/applications
 desktop.files = neoglogg.desktop
 
 target.path = $$PREFIX/bin
-INSTALLS = target icon16 icon32 icon_svg doc desktop
+INSTALLS = target icon64 icon128 icon256 icon_svg doc desktop
 
 # Build directories
 CONFIG(debug, debug|release) {

@@ -20,6 +20,8 @@
 #ifndef THEME_H
 #define THEME_H
 
+#include <QString>
+
 // Application-wide colour scheme.
 //
 // The log views paint themselves from the palette roles (Base, Text,
@@ -33,6 +35,15 @@ namespace Theme {
     // mode back off restores the original look rather than leaving Fusion
     // behind. Must be called from the GUI thread, after QApplication exists.
     void apply( bool dark );
+
+    // Resource path of an in-app glyph, e.g. iconPath( "reload" ).
+    //
+    // The glyphs are monochrome and no single colour clears a 7:1 contrast
+    // ratio against both a light button and the dark scheme's #353535, so two
+    // sets are shipped and this picks between them. Call it when building the
+    // icon; the choice is only re-evaluated on the next call, so icons set in
+    // a constructor keep the scheme that was active at the time.
+    QString iconPath( const QString& name );
 };
 
 #endif

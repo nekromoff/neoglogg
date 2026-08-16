@@ -1,26 +1,49 @@
 <RCC>
 <qresource>
-    <file>images/hicolor/16x16/neoglogg.png</file>
-    <file>images/hicolor/24x24/neoglogg.png</file>
-    <file>images/hicolor/32x32/neoglogg.png</file>
-    <file>images/hicolor/48x48/neoglogg.png</file>
-    <file>images/open14.png</file>
-    <file>images/open14@2x.png</file>
-    <file>images/reload14.png</file>
-    <file>images/reload14@2x.png</file>
-    <file>images/olddata_icon.png</file>
-    <file>images/olddata_icon@2x.png</file>
-    <file>images/newdata_icon.png</file>
-    <file>images/newdata_icon@2x.png</file>
-    <file>images/newfiltered_icon.png</file>
-    <file>images/newfiltered_icon@2x.png</file>
-    <file>images/stop14.png</file>
+    <file>images/hicolor/64x64/neoglogg.png</file>
+    <file>images/hicolor/128x128/neoglogg.png</file>
+    <file>images/hicolor/256x256/neoglogg.png</file>
+
+    <file>images/open.png</file>
+    <file>images/open@2x.png</file>
+    <file>images/reload.png</file>
+    <file>images/reload@2x.png</file>
+    <file>images/cross.png</file>
+    <file>images/cross@2x.png</file>
     <file>images/plus.png</file>
+    <file>images/plus@2x.png</file>
     <file>images/minus.png</file>
-    <file>images/down.png</file>
-    <file>images/up.png</file>
-    <file>images/arrowdown.png</file>
-    <file>images/arrowup.png</file>
-    <file>images/darkclosebutton.png</file>
+    <file>images/minus@2x.png</file>
+    <file>images/chevron-up.png</file>
+    <file>images/chevron-up@2x.png</file>
+    <file>images/chevron-down.png</file>
+    <file>images/chevron-down@2x.png</file>
+    <file>images/data-old.png</file>
+    <file>images/data-old@2x.png</file>
+    <file>images/data-new.png</file>
+    <file>images/data-new@2x.png</file>
+    <file>images/data-filtered.png</file>
+    <file>images/data-filtered@2x.png</file>
+
+    <file>images/dark/open.png</file>
+    <file>images/dark/open@2x.png</file>
+    <file>images/dark/reload.png</file>
+    <file>images/dark/reload@2x.png</file>
+    <file>images/dark/cross.png</file>
+    <file>images/dark/cross@2x.png</file>
+    <file>images/dark/plus.png</file>
+    <file>images/dark/plus@2x.png</file>
+    <file>images/dark/minus.png</file>
+    <file>images/dark/minus@2x.png</file>
+    <file>images/dark/chevron-up.png</file>
+    <file>images/dark/chevron-up@2x.png</file>
+    <file>images/dark/chevron-down.png</file>
+    <file>images/dark/chevron-down@2x.png</file>
+    <file>images/dark/data-old.png</file>
+    <file>images/dark/data-old@2x.png</file>
+    <file>images/dark/data-new.png</file>
+    <file>images/dark/data-new@2x.png</file>
+    <file>images/dark/data-filtered.png</file>
+    <file>images/dark/data-filtered@2x.png</file>
 </qresource>
 </RCC>

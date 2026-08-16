@@ -181,7 +181,6 @@ class MainWindow : public QMainWindow
     QMenu *viewMenu;
     QMenu *toolsMenu;
     QMenu *encodingMenu;
-    QMenu *helpMenu;
 
     InfoLine *infoLine;
     QLabel* lineNbField;

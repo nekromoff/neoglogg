@@ -1,0 +1,21 @@
+#!/usr/bin/make -f
+#
+# neoglogg builds with qmake, so dh's default (which would look for
+# configure/CMakeLists) is overridden for the configure and install steps.
+
+include /usr/share/dpkg/pkg-info.mk
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	qmake6 neoglogg.pro PREFIX=/usr VERSION="$(DEB_VERSION_UPSTREAM)"
+
+# The .pro already installs the binary, .desktop, icons and docs to the right
+# places; INSTALL_ROOT just redirects them into the package staging directory.
+override_dh_auto_install:
+	dh_auto_install -- INSTALL_ROOT=$(CURDIR)/debian/neoglogg
+
+# The test suite needs a hand-built gmock via $GMOCK_HOME and does not run
+# unattended; skip it rather than fail the package build.
+override_dh_auto_test:

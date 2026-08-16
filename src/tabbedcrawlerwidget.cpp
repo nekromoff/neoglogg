@@ -26,11 +26,12 @@
 #include "crawlerwidget.h"
 
 #include "log.h"
+#include "theme.h"
 
 TabbedCrawlerWidget::TabbedCrawlerWidget() : QTabWidget(),
-    olddata_icon_( ":/images/olddata_icon.png" ),
-    newdata_icon_( ":/images/newdata_icon.png" ),
-    newfiltered_icon_( ":/images/newfiltered_icon.png" ),
+    olddata_icon_( Theme::iconPath( "data-old" ) ),
+    newdata_icon_( Theme::iconPath( "data-new" ) ),
+    newfiltered_icon_( Theme::iconPath( "data-filtered" ) ),
     myTabBar_(),
     iconSide_( QTabBar::LeftSide )
 {

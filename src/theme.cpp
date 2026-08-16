@@ -34,6 +34,9 @@ bool     defaultsSaved  = false;
 QString  defaultStyle;
 QPalette defaultPalette;
 
+// Which glyph set iconPath() hands out. Tracks the last apply().
+bool darkActive = false;
+
 QPalette darkPalette()
 {
     const QColor window( 0x35, 0x35, 0x35 );
@@ -105,4 +108,14 @@ void Theme::apply( bool dark )
 
         qApp->setPalette( defaultPalette );
     }
+
+    darkActive = dark;
+}
+
+QString Theme::iconPath( const QString& name )
+{
+    return darkActive ? QStringLiteral( ":/images/dark/" ) + name
+                            + QStringLiteral( ".png" )
+                      : QStringLiteral( ":/images/" ) + name
+                            + QStringLiteral( ".png" );
 }

@@ -74,7 +74,9 @@ int main(int argc, char *argv[])
     TLogLevel logLevel = logWARNING;
 
     try {
-        po::options_description desc("Usage: neoglogg [options] [files]");
+        po::options_description desc(
+            "neoglogg - the fast, smart log explorer. Updated and upgraded.\n"
+            "\nUsage: neoglogg [options] [files]");
         desc.add_options()
             ("help,h", "print out program usage (this message)")
             ("version,v", "print neoglogg's version information")

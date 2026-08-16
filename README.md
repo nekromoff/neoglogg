@@ -60,17 +60,18 @@ Installers, binaries and source tarballs are not available yet.
   GB18030, Shift_JIS, KOI8-R). Qt 5 is no longer supported.
 * Boost "program-options" development libraries
 
-* **Linux (Debian/Ubuntu):** `qt6-base-dev`, `qt6-5compat-dev`, `qmake6`,
-  `libboost-program-options-dev`; optionally `markdown` for the HTML docs.
+* **Linux (Debian/Ubuntu):** `qt6-base-dev`, `qt6-base-dev-tools`,
+  `qt6-5compat-dev`, `libboost-program-options-dev`.
   D-Bus support (single-instance mode) only needs Qt6 DBus, included in
   qt6-base.
-* **Windows (native MinGW):** Qt 6.x for MinGW and Boost, as in
-  `appveyor.yml`: `qmake6 -r BOOST_PATH=%BOOST_ROOT%` then `mingw32-make`.
-  NSIS (plus the `neoglogg.nsi` script) is only needed to produce the
-  installer. Untested since the Qt 6 port.
-* **macOS:** static Qt 6 build and Boost (see `release-osx.sh` for the
-  expected paths — untested since the Qt 6 port);
-  `node`/`appdmg` (via Homebrew and npm) only for packaging the DMG installer.
+* **Windows (native MinGW):** MSYS2 with `mingw-w64-x86_64-qt6-base`,
+  `mingw-w64-x86_64-qt6-5compat` and `mingw-w64-x86_64-boost`, as in
+  `.github/workflows/ci.yml`. NSIS (plus the `neoglogg.nsi` script) is only
+  needed to produce the installer.
+* **macOS:** Qt 6 and the Boost sources. The release workflow compiles
+  `program_options` from source via `BOOST_PATH` and packages with
+  `macdeployqt -dmg`, so neither Homebrew Boost nor `node`/`appdmg` is
+  required; `release-osx.sh` remains for the older local flow.
 * **Tests:** CMake (3.16+), Qt 6 (including Core5Compat and Test) and the
   Google Mock sources (`GMOCK_HOME`), see below.
 
@@ -119,3 +120,27 @@ make
 
 - Copyright (c) 2009–2018 Nicolas Bonnefon
 - Copyright (c) 2026+ Daniel Duris, dusoft@staznosti.sk
+
+Releases
+--------
+
+Pushing a version tag builds and publishes every artifact:
+
+```
+git tag -a v1.2.3 -m "1.2.3"
+git push origin v1.2.3
+```
+
+`.github/workflows/release.yml` then produces a `.deb`, an `.AppImage`, a
+Windows installer plus portable zip, and a macOS `.dmg`, and attaches them to
+a **draft** GitHub Release for review before publishing.
+
+`.github/workflows/ci.yml` compiles on Linux, Windows and macOS for every push
+and pull request. It does not run the test suite: `tests/CMakeLists.txt` still
+expects a hand-built Google Mock via `$GMOCK_HOME`.
+
+The AppImage is built on Ubuntu 22.04 deliberately — it bundles Qt but still
+links the host glibc, which is not forward compatible.
+
+Neither the Windows installer nor the macOS disk image is code-signed, so both
+warn on first launch. On macOS, right-click > Open the first time.

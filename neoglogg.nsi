@@ -35,13 +35,13 @@ Caption "neoglogg ${VERSION} Setup"
 # Pages
 !define MUI_WELCOMEPAGE_TITLE "Welcome to the neoglogg ${VERSION} Setup Wizard"
 !define MUI_WELCOMEPAGE_TEXT "This wizard will guide you through the installation of neoglogg\
-, a fast, advanced log explorer.$\r$\n$\r$\n\
+, the fast, smart log explorer. Updated and upgraded.$\r$\n$\r$\n\
 neoglogg and the Qt libraries are released under the GPL, see \
-the COPYING file.$\r$\n$\r$\n$_CLICK"
+the LICENSE file.$\r$\n$\r$\n$_CLICK"
 ; MUI_FINISHPAGE_LINK_LOCATION "http://nsis.sf.net/"
 
 !insertmacro MUI_PAGE_WELCOME
-;!insertmacro MUI_PAGE_LICENSE "COPYING"
+;!insertmacro MUI_PAGE_LICENSE "LICENSE"
 # !ifdef VER_MAJOR & VER_MINOR & VER_REVISION & VER_BUILD...
 !insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_DIRECTORY
@@ -63,7 +63,7 @@ Section "neoglogg" neoglogg
 
     SetOutPath $INSTDIR
     File release\neoglogg.exe
-    File COPYING
+    File LICENSE
     File README.md
 
     ; Create the 'sendto' link
@@ -130,7 +130,7 @@ Section "Uninstall"
     Delete "$INSTDIR\neoglogg.exe"
     Delete "$INSTDIR\README"
     Delete "$INSTDIR\README.md"
-    Delete "$INSTDIR\COPYING"
+    Delete "$INSTDIR\LICENSE"
     Delete "$INSTDIR\Qt6Core.dll"
     Delete "$INSTDIR\Qt6Gui.dll"
     Delete "$INSTDIR\Qt6Network.dll"

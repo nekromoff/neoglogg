@@ -1,0 +1,211 @@
+name: Release
+
+# Runs on a version tag and publishes .deb, .AppImage, Windows installer +
+# portable zip, and a macOS .dmg to a GitHub Release.
+#
+#     git tag -a v1.2.3 -m "1.2.3" && git push origin v1.2.3
+#
+# Every job needs fetch-depth: 0 — the .pro derives its version from
+# `git describe`, which fails on the shallow clone actions/checkout defaults to.
+
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (without the leading v)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    name: Resolve version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - id: v
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+  deb:
+    name: Debian package
+    needs: version
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential devscripts debhelper \
+            qt6-base-dev qt6-base-dev-tools qt6-5compat-dev libboost-program-options-dev
+
+      - name: Stamp the changelog with the release version
+        run: |
+          dch --create --package neoglogg \
+              --newversion "${{ needs.version.outputs.version }}" \
+              --distribution unstable --controlmaint \
+              "Release ${{ needs.version.outputs.version }}."
+        env:
+          DEBEMAIL: dusoft@staznosti.sk
+          DEBFULLNAME: Daniel Duris
+
+      - name: Build the package
+        run: dpkg-buildpackage -b -us -uc
+
+      - name: Collect
+        run: mkdir -p out && mv ../*.deb out/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deb
+          path: out/*.deb
+
+  appimage:
+    name: AppImage
+    needs: version
+    # Built on the oldest supported distribution on purpose: an AppImage
+    # bundles Qt but still links the host glibc, which is not forward
+    # compatible. Building on 24.04 would break users on older systems.
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            qt6-base-dev qt6-base-dev-tools qt6-5compat-dev libboost-program-options-dev \
+            libfuse2 wget file
+
+      - name: Build the AppImage
+        run: VERSION="${{ needs.version.outputs.version }}" ./release-appimage.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appimage
+          path: '*.AppImage'
+
+  windows:
+    name: Windows installer
+    needs: version
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-make
+            mingw-w64-x86_64-qt6-base
+            mingw-w64-x86_64-qt6-5compat
+            mingw-w64-x86_64-boost
+            mingw-w64-x86_64-nsis
+            git zip
+
+      - name: Build
+        run: |
+          qmake6 neoglogg.pro CONFIG+="release no-dbus" \
+            VERSION="${{ needs.version.outputs.version }}"
+          mingw32-make -j"$(nproc)"
+
+      - name: Bundle the Qt runtime beside the binary
+        run: windeployqt6 --release --no-translations release/neoglogg.exe
+
+      - name: Portable zip
+        run: |
+          cd release
+          zip -r "../neoglogg-${{ needs.version.outputs.version }}-win64.zip" .
+
+      - name: Installer
+        run: |
+          makensis -DVERSION="${{ needs.version.outputs.version }}" neoglogg.nsi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            *.exe
+            *.zip
+
+  macos:
+    name: macOS disk image
+    needs: version
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.*'
+          modules: qt5compat
+
+      - name: Fetch Boost sources
+        run: |
+          curl -sL -o boost.tar.gz \
+            https://archives.boost.io/release/1.83.0/source/boost_1_83_0.tar.gz
+          tar xzf boost.tar.gz
+
+      - name: Build
+        run: |
+          qmake neoglogg.pro BOOST_PATH="$PWD/boost_1_83_0" \
+            CONFIG+="release no-dbus" \
+            VERSION="${{ needs.version.outputs.version }}"
+          make -j"$(sysctl -n hw.ncpu)"
+
+      # macdeployqt writes the .dmg itself, which avoids the node/appdmg
+      # dependency release-osx.sh needs. The disk image is unsigned: without
+      # an Apple Developer ID, Gatekeeper will warn on first launch and users
+      # must right-click > Open.
+      - name: Bundle and package
+        run: |
+          macdeployqt release/neoglogg.app -dmg
+          mv release/neoglogg.dmg \
+             "neoglogg-${{ needs.version.outputs.version }}-macos.dmg"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: '*.dmg'
+
+  publish:
+    name: Publish release
+    needs: [ version, deb, appimage, windows, macos ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List what will be published
+        run: find artifacts -type f | sort
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: neoglogg ${{ needs.version.outputs.version }}
+          draft: true
+          generate_release_notes: true
+          files: artifacts/**/*

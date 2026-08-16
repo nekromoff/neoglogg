@@ -1,0 +1,26 @@
+Source: neoglogg
+Section: utils
+Priority: optional
+Maintainer: Daniel Duris <dusoft@staznosti.sk>
+Build-Depends: debhelper-compat (= 13),
+               qt6-base-dev,
+               qt6-5compat-dev,
+               libboost-program-options-dev
+Standards-Version: 4.6.2
+Homepage: https://github.com/nekromoff/neoglogg
+Rules-Requires-Root: no
+
+Package: neoglogg
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: the fast, smart log explorer
+ neoglogg is a multi-platform GUI application to browse and search through
+ long or complex log files. It is designed with programmers and system
+ administrators in mind, and treats the log file as read-only.
+ .
+ Files are memory-mapped rather than loaded, so very large logs open
+ immediately, and searches run on a background thread with the results shown
+ in a second pane that stays in sync with the main view.
+ .
+ This is a maintained fork of glogg, updated and upgraded: ported to Qt 6,
+ with a dark theme, multi-threaded search and line-range searching.

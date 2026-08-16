@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Tab indicator: new data matching the current search. Outranks data-new,
+     so it carries both the warmer colour and the extra ring. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <circle cx="12" cy="12" r="9" fill="none" stroke="#D93025" stroke-width="2.5"/>
+  <circle cx="12" cy="12" r="5" fill="#D93025"/>
+</svg>

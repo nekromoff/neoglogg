@@ -38,3 +38,16 @@ build/
 # Qt-specific
 /.moc
 /.qmake.stash
+
+# Debian packaging build artifacts
+debian/neoglogg/
+debian/.debhelper/
+debian/files
+debian/debhelper-build-stamp
+debian/*.substvars
+debian/*.log
+
+# AppImage build
+AppDir/
+.appimage-tools/
+*.AppImage

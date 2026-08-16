@@ -1,0 +1,95 @@
+name: CI
+
+# Fast feedback on every push and pull request: compile on all three
+# platforms, no packaging. The release workflow does the slow parts.
+#
+# The test suite is deliberately not run here. tests/CMakeLists.txt needs a
+# hand-built gmock via $GMOCK_HOME and does not build unattended; wire it in
+# once that is modernised.
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  linux:
+    name: Linux (Qt 6, system Boost)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # .pro calls `git describe` for the version
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            qt6-base-dev qt6-base-dev-tools qt6-5compat-dev libboost-program-options-dev
+
+      - name: Build
+        run: |
+          qmake6 neoglogg.pro PREFIX=/usr VERSION="ci-${GITHUB_SHA::8}"
+          make -j"$(nproc)"
+
+      - name: Check the install rules still resolve
+        run: |
+          make install INSTALL_ROOT="$PWD/AppDir"
+          find AppDir -type f | sort
+
+  windows:
+    name: Windows (MSYS2 MinGW)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-make
+            mingw-w64-x86_64-qt6-base
+            mingw-w64-x86_64-qt6-5compat
+            mingw-w64-x86_64-boost
+            git
+
+      - name: Build
+        run: |
+          qmake6 neoglogg.pro VERSION="ci-${GITHUB_SHA::8}"
+          mingw32-make -j"$(nproc)"
+
+  macos:
+    name: macOS (Qt 6, Boost from source)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.*'
+          modules: qt5compat
+
+      # The .pro's macOS branch hardcodes /usr/local/lib and a -mt suffix,
+      # neither of which matches Homebrew on Apple Silicon. Compiling
+      # program_options from source sidesteps that entirely.
+      - name: Fetch Boost sources
+        run: |
+          curl -sL -o boost.tar.gz \
+            https://archives.boost.io/release/1.83.0/source/boost_1_83_0.tar.gz
+          tar xzf boost.tar.gz
+
+      - name: Build
+        run: |
+          qmake neoglogg.pro BOOST_PATH="$PWD/boost_1_83_0" \
+            CONFIG+="release no-dbus" VERSION="ci-${GITHUB_SHA::8}"
+          make -j"$(sysctl -n hw.ncpu)"

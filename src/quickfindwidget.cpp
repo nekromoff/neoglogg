@@ -18,6 +18,7 @@
  */
 
 #include "log.h"
+#include "theme.h"
 
 #include <QCoreApplication>
 #include <QToolButton>
@@ -47,7 +48,7 @@ QuickFindWidget::QuickFindWidget( QWidget* parent ) : QWidget( parent )
     layout->setSpacing( 6 );
 
     closeButton_ = setupToolButton(
-            QLatin1String(""), QLatin1String( ":/images/darkclosebutton.png" ) );
+            QLatin1String(""), Theme::iconPath( "cross" ) );
     layout->addWidget( closeButton_ );
 
     editQuickFind_ = new QLineEdit( this );
@@ -59,11 +60,11 @@ QuickFindWidget::QuickFindWidget( QWidget* parent ) : QWidget( parent )
     layout->addWidget( ignoreCaseCheck_ );
 
     previousButton_ = setupToolButton( QLatin1String("Previous"),
-            QLatin1String( ":/images/arrowup.png" ) );
+            Theme::iconPath( "chevron-up" ) );
     layout->addWidget( previousButton_ );
 
     nextButton_ = setupToolButton( QLatin1String("Next"),
-            QLatin1String( ":/images/arrowdown.png" ) );
+            Theme::iconPath( "chevron-down" ) );
     layout->addWidget( nextButton_ );
 
     notificationText_ = new QLabel( "" );

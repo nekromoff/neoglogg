@@ -23,6 +23,7 @@
 
 #include <iostream>
 #include <cassert>
+#include <algorithm>
 
 #include <QAction>
 #include <QActionGroup>
@@ -81,10 +82,9 @@ MainWindow::MainWindow( std::unique_ptr<Session> session,
     setGeometry( geometry.x() + 20, geometry.y() + 40,
             geometry.width() - 140, geometry.height() - 140 );
 
-    mainIcon_.addFile( ":/images/hicolor/16x16/neoglogg.png" );
-    mainIcon_.addFile( ":/images/hicolor/24x24/neoglogg.png" );
-    mainIcon_.addFile( ":/images/hicolor/32x32/neoglogg.png" );
-    mainIcon_.addFile( ":/images/hicolor/48x48/neoglogg.png" );
+    mainIcon_.addFile( ":/images/hicolor/64x64/neoglogg.png" );
+    mainIcon_.addFile( ":/images/hicolor/128x128/neoglogg.png" );
+    mainIcon_.addFile( ":/images/hicolor/256x256/neoglogg.png" );
 
     setWindowIcon( mainIcon_ );
 
@@ -253,7 +253,7 @@ void MainWindow::createActions()
 
     openAction = new QAction(tr("&Open..."), this);
     openAction->setShortcut(QKeySequence::Open);
-    openAction->setIcon( QIcon( ":/images/open14.png" ) );
+    openAction->setIcon( QIcon( Theme::iconPath( "open" ) ) );
     openAction->setStatusTip(tr("Open a file"));
     connect(openAction, SIGNAL(triggered()), this, SLOT(open()));
 
@@ -330,11 +330,11 @@ void MainWindow::createActions()
 
     reloadAction = new QAction( tr("&Reload"), this );
     reloadAction->setShortcut(QKeySequence::Refresh);
-    reloadAction->setIcon( QIcon(":/images/reload14.png") );
+    reloadAction->setIcon( QIcon( Theme::iconPath( "reload" ) ) );
     signalMux_.connect( reloadAction, SIGNAL(triggered()), SLOT(reload()) );
 
     stopAction = new QAction( tr("&Stop"), this );
-    stopAction->setIcon( QIcon(":/images/stop14.png") );
+    stopAction->setIcon( QIcon( Theme::iconPath( "cross" ) ) );
     stopAction->setEnabled( true );
     signalMux_.connect( stopAction, SIGNAL(triggered()), SLOT(stopLoading()) );
 
@@ -410,14 +410,47 @@ void MainWindow::createMenus()
     encodingMenu = menuBar()->addMenu( tr("En&coding") );
     encodingMenu->addAction( encodingAction[0] );
     encodingMenu->addSeparator();
+
+    // The Unicode encodings are what any log written this decade will be in,
+    // so they go straight after Auto rather than in the middle of the legacy
+    // code pages. Everything else follows alphabetically.
+    static const Encoding unicodeFirst[] = {
+        Encoding::ENCODING_UTF8,
+        Encoding::ENCODING_UTF16LE,
+        Encoding::ENCODING_UTF16BE,
+    };
+
+    for ( Encoding encoding : unicodeFirst )
+        encodingMenu->addAction( encodingAction[static_cast<int>( encoding )] );
+
+    encodingMenu->addSeparator();
+
+    QList<QAction*> remaining;
     for ( int i = 1; i < static_cast<int>( Encoding::ENCODING_MAX ); ++i ) {
-        encodingMenu->addAction( encodingAction[i] );
+        const bool promoted = std::any_of(
+                std::begin( unicodeFirst ), std::end( unicodeFirst ),
+                [i]( Encoding e ) { return static_cast<int>( e ) == i; } );
+        if ( ! promoted )
+            remaining.append( encodingAction[i] );
     }
+
+    // Sorted on the label the user actually sees, so the '&' accelerator
+    // markers must not be part of the comparison.
+    std::sort( remaining.begin(), remaining.end(),
+            []( const QAction* a, const QAction* b ) {
+                return QString( a->text() ).remove( QLatin1Char('&') )
+                    .localeAwareCompare(
+                        QString( b->text() ).remove( QLatin1Char('&') ) ) < 0;
+            } );
+
+    for ( QAction* action : remaining )
+        encodingMenu->addAction( action );
 
     menuBar()->addSeparator();
 
-    helpMenu = menuBar()->addMenu( tr("&Help") );
-    helpMenu->addAction( aboutAction );
+    // About sits directly on the menu bar rather than inside a Help menu:
+    // it was the only entry there, so the extra level bought nothing.
+    menuBar()->addAction( aboutAction );
 }
 
 void MainWindow::createToolBars()
@@ -561,9 +594,19 @@ void MainWindow::applyThemeConfiguration()
 // Opens the 'About' dialog box.
 void MainWindow::about()
 {
-    QMessageBox::about(this, tr("About neoglogg"),
+    // Built on the stack rather than through QMessageBox::about(), which sets
+    // WA_DeleteOnClose on a heap box; QDialog::exec() then deletes it while
+    // still unwinding, and ~QDialog crashes hiding a native dialog helper that
+    // has already gone. A stack instance never reaches that path.
+    QMessageBox box( this );
+    box.setWindowTitle( tr("About neoglogg") );
+    box.setTextFormat( Qt::RichText );
+    box.setIconPixmap( mainIcon_.pixmap( 64, 64 ) );
+    box.setTextInteractionFlags(
+            Qt::TextBrowserInteraction | Qt::TextSelectableByMouse );
+    box.setText(
             tr("<h2>neoglogg " NEOGLOGG_VERSION "</h2>"
-                "<p>A fast, advanced log explorer."
+                "<p>The fast, smart log explorer. Updated and upgraded."
 #ifdef NEOGLOGG_COMMIT
                 "<p>Built " NEOGLOGG_DATE " from " NEOGLOGG_COMMIT
 #endif
@@ -573,6 +616,7 @@ void MainWindow::about()
                 "<br/>Copyright &copy; 2026+ Daniel Duris, "
                 "<a href=\"mailto:dusoft@staznosti.sk\">dusoft@staznosti.sk</a>"
                 "<p>You may modify and redistribute the program under the terms of the GPL (version 3 or later)." ) );
+    box.exec();
 }
 
 // Opens the 'About Qt' dialog box.

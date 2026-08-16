@@ -17,6 +17,8 @@
  * along with neoglogg.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <QIcon>
+
 #include "log.h"
 
 #include "configuration.h"
@@ -24,6 +26,7 @@
 #include "filterset.h"
 
 #include "filtersdialog.h"
+#include "theme.h"
 
 static const QString DEFAULT_PATTERN = "New Filter";
 static const bool    DEFAULT_IGNORE_CASE = false;
@@ -35,6 +38,13 @@ static const QString DEFAULT_BACK_COLOUR = "white";
 FiltersDialog::FiltersDialog( QWidget* parent ) : QDialog( parent )
 {
     setupUi( this );
+
+    // The .ui can only name one icon per button, so it carries the light set.
+    // Re-apply them through Theme so the dark set is used when it is active.
+    addFilterButton->setIcon( QIcon( Theme::iconPath( "plus" ) ) );
+    removeFilterButton->setIcon( QIcon( Theme::iconPath( "minus" ) ) );
+    upFilterButton->setIcon( QIcon( Theme::iconPath( "chevron-up" ) ) );
+    downFilterButton->setIcon( QIcon( Theme::iconPath( "chevron-down" ) ) );
 
     // Reload the filter list from disk (in case it has been changed
     // by another neoglogg instance) and copy it to here.

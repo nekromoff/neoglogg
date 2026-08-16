@@ -82,7 +82,7 @@
              </property>
              <property name="icon">
               <iconset resource="../neoglogg.qrc">
-               <normaloff>:/images/up.png</normaloff>:/images/up.png</iconset>
+               <normaloff>:/images/chevron-up.png</normaloff>:/images/chevron-up.png</iconset>
              </property>
             </widget>
            </item>
@@ -96,7 +96,7 @@
              </property>
              <property name="icon">
               <iconset resource="../neoglogg.qrc">
-               <normaloff>:/images/down.png</normaloff>:/images/down.png</iconset>
+               <normaloff>:/images/chevron-down.png</normaloff>:/images/chevron-down.png</iconset>
              </property>
             </widget>
            </item>
