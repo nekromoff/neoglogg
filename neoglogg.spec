@@ -10,15 +10,20 @@
 #
 %global _version %{?version}%{!?version:0.0.0}
 
-# No separate -debuginfo/-debugsource packages.
+# No -debuginfo/-debugsource packages.
 #
-# The .pro assigns QMAKE_CXXFLAGS outright (rather than appending), so the
-# RPM %%{optflags} never reach the compiler and the objects carry only a
-# bare -g. rpm's debuginfo extraction then cannot map the DWARF back to the
-# sources, produces an empty debugsourcefiles.list and fails the build.
-# A released GUI binary does not need a debuginfo package, so skip it and
-# strip the binary ourselves (rpm only strips when this is enabled).
+# The .pro assigns QMAKE_CXXFLAGS outright rather than appending, so the RPM
+# %%{optflags} never reach the compiler and the objects carry a bare -g whose
+# DWARF rpm cannot map back to the sources. find-debuginfo then writes an
+# empty debugsourcefiles.list and the debugsource subpackage fails the build.
+#
+# All four switches are needed: nil-ing %%debug_package alone still leaves
+# Fedora generating the debugsource subpackage, and %%__debug_install_post is
+# what actually runs find-debuginfo.
 %global debug_package %{nil}
+%global __debug_install_post %{nil}
+%global _enable_debug_packages 0
+%undefine _debugsource_packages
 
 Name:           neoglogg
 Version:        %{_version}
@@ -61,8 +66,8 @@ qmake6 %{name}.pro PREFIX=%{_prefix} VERSION="%{version}"
 %install
 %make_install INSTALL_ROOT=%{buildroot}
 
-# rpm does not strip when debug_package is disabled, and the .pro builds
-# with -g, so the binary would otherwise ship its full debug info.
+# With the debuginfo machinery disabled nothing else strips the binary, and
+# the .pro always builds with -g, so do it here.
 strip %{buildroot}%{_bindir}/%{name}
 
 %check
