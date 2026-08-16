@@ -94,15 +94,14 @@ Section "neoglogg" neoglogg
 SectionEnd
 
 Section "Qt6 Runtime libraries" qtlibs
+    ; Everything windeployqt placed next to the binary, with its directory
+    ; layout intact: the Qt DLLs, the MinGW runtime, and the plugin folders
+    ; (platforms\, styles\, imageformats\, ...) the application loads at run
+    ; time. Hand-listing these was already wrong -- qwindows.dll lives in
+    ; platforms\, not beside the exe -- and a dynamic Qt drags in far more
+    ; than the five DLLs that used to be named here.
     SetOutPath $INSTDIR
-    File release\Qt6Core.dll
-    File release\Qt6Gui.dll
-    File release\Qt6Network.dll
-    File release\Qt6Widgets.dll
-    File release\Qt6Core5Compat.dll
-    File release\libwinpthread-1.dll
-    SetOutPath $INSTDIR\platforms
-    File release\qwindows.dll
+    File /r /x neoglogg.exe release\*.*
 SectionEnd
 
 Section "Create Start menu shortcut" shortcut

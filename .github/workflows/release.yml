@@ -38,7 +38,7 @@ jobs:
   deb:
     name: Debian package
     needs: version
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -75,10 +75,13 @@ jobs:
   appimage:
     name: AppImage
     needs: version
-    # Built on the oldest supported distribution on purpose: an AppImage
-    # bundles Qt but still links the host glibc, which is not forward
-    # compatible. Building on 24.04 would break users on older systems.
-    runs-on: ubuntu-22.04
+    # 24.04, not an older image: Qt 6's 5compat module (required for the
+    # legacy text codecs) is not packaged before then. The trade-off is the
+    # glibc floor -- an AppImage bundles Qt but still links the host glibc,
+    # which is not forward compatible, so this will not run on distributions
+    # older than 24.04. Dropping to 22.04 means installing Qt via aqtinstall
+    # instead of apt.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:

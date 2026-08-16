@@ -1132,9 +1132,13 @@ void AbstractLogView::updateDisplaySize()
 
     // Our text area cache is now invalid
     textAreaCache_.invalid_ = true;
+    // devicePixelRatio() is a qreal, so both products are doubles. Narrowing
+    // them inside a braced initialiser is ill-formed: gcc lets it through with
+    // a warning, clang rejects it outright, so the casts are explicit.
     textAreaCache_.pixmap_  = QPixmap {
-        viewport()->width() * viewport()->devicePixelRatio(),
-        static_cast<int32_t>( getNbVisibleLines() ) * charHeight_ * viewport()->devicePixelRatio() };
+        static_cast<int>( viewport()->width() * viewport()->devicePixelRatio() ),
+        static_cast<int>( static_cast<int32_t>( getNbVisibleLines() )
+                * charHeight_ * viewport()->devicePixelRatio() ) };
     textAreaCache_.pixmap_.setDevicePixelRatio( viewport()->devicePixelRatio() );
 }
 

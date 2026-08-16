@@ -26,7 +26,18 @@ namespace po = boost::program_options;
 
 #include <iostream>
 #include <iomanip>
-using namespace std;
+// Deliberately not `using namespace std`: on Windows that drags C++17's
+// std::byte into scope alongside the ::byte typedef in rpcndr.h, which Qt
+// pulls in, and every unqualified use of the name then becomes ambiguous.
+using std::cerr;
+using std::cout;
+using std::endl;
+using std::exception;
+using std::make_shared;
+using std::shared_ptr;
+using std::string;
+using std::unique_ptr;
+using std::vector;
 
 #ifdef _WIN32
 #include "unistd.h"
