@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026+ Daniel Duris, dusoft@staznosti.sk
  * Copyright (C) 2014 Nicolas Bonnefon and other contributors
  *
  * This file is part of neoglogg.
@@ -23,7 +24,7 @@
 
 #include "log.h"
 
-static const char* DBUS_SERVICE_NAME = "org.bonnefon.neoglogg";
+static const char* DBUS_SERVICE_NAME = "sk.staznosti.neoglogg";
 
 DBusExternalCommunicator::DBusExternalCommunicator()
 {

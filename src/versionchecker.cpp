@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026+ Daniel Duris, dusoft@staznosti.sk
  * Copyright (C) 2014 Nicolas Bonnefon and other contributors
  *
  * This file is part of neoglogg.
@@ -36,7 +37,7 @@
 #endif
 
 const char* VersionChecker::VERSION_URL =
-    "http://gloggversion.bonnefon.org/latest";
+    "https://raw.githubusercontent.com/nekromoff/neoglogg/master/latest_version";
 
 const uint64_t VersionChecker::CHECK_INTERVAL_S =
     3600 * 24 * 7; /* 7 days */

@@ -11,7 +11,7 @@
 
 #include "log.h"
 
-static const char* GLOG_SERVICE_NAME = "org.bonnefon.neoglogg";
+static const char* GLOG_SERVICE_NAME = "sk.staznosti.neoglogg";
 
 #ifdef Q_OS_UNIX
 QSharedMemory* g_staticSharedMemory = nullptr;

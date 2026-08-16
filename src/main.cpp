@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026+ Daniel Duris, dusoft@staznosti.sk
  * Copyright (C) 2009, 2010, 2011, 2013, 2014 Nicolas Bonnefon and other contributors
  *
  * This file is part of neoglogg.
@@ -299,6 +300,7 @@ static void print_version()
 #ifdef NEOGLOGG_COMMIT
     cout << "Built " NEOGLOGG_DATE " from " NEOGLOGG_COMMIT "\n";
 #endif
+    cout << "Copyright (c) 2026+ Daniel Duris, dusoft@staznosti.sk\n";
     cout << "Copyright (C) 2009, 2010, 2011, 2012, 2013, 2014, 2015 Nicolas Bonnefon and other contributors\n";
     cout << "This is free software.  You may redistribute copies of it under the terms of\n";
     cout << "the GNU General Public License <http://www.gnu.org/licenses/gpl.html>.\n";

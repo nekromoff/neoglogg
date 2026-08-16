@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026+ Daniel Duris, dusoft@staznosti.sk
  * Copyright (C) 2009, 2010, 2013, 2015 Nicolas Bonnefon and other contributors
  *
  * This file is part of neoglogg.

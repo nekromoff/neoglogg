@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2026+ Daniel Duris, dusoft@staznosti.sk
  * Copyright (C) 2009, 2010, 2011, 2013, 2014 Nicolas Bonnefon and other contributors
  *
  * This file is part of neoglogg.
@@ -611,10 +612,10 @@ void MainWindow::about()
                 "<p>Built " NEOGLOGG_DATE " from " NEOGLOGG_COMMIT
 #endif
                 "<p>neoglogg by Daniel Duris, based on glogg by Nicolas Bonnefon."
-                "<p><a href=\"http://glogg.bonnefon.org/\">http://glogg.bonnefon.org/</a></p>"
-                "<p>Copyright &copy; 2009&ndash;2018 Nicolas Bonnefon and other contributors"
-                "<br/>Copyright &copy; 2026+ Daniel Duris, "
+                "<p><a href=\"https://github.com/nekromoff/neoglogg\">https://github.com/nekromoff/neoglogg</a></p>"
+                "<p>Copyright &copy; 2026+ Daniel Duris, "
                 "<a href=\"mailto:dusoft@staznosti.sk\">dusoft@staznosti.sk</a>"
+                "<br/>Copyright &copy; 2009&ndash;2018 Nicolas Bonnefon and other contributors"
                 "<p>You may modify and redistribute the program under the terms of the GPL (version 3 or later)." ) );
     box.exec();
 }
@@ -840,7 +841,7 @@ void MainWindow::newVersionNotification( const QString& new_version )
 
     QMessageBox msgBox;
     msgBox.setText( QString( "A new version of neoglogg (%1) is available for download <p>"
-                "<a href=\"http://glogg.bonnefon.org/download.html\">http://glogg.bonnefon.org/download.html</a>" 
+                "<a href=\"https://github.com/nekromoff/neoglogg/releases/\">https://github.com/nekromoff/neoglogg/releases/</a>"
                 ).arg( new_version ) );
     msgBox.exec();
 }

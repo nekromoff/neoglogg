@@ -181,5 +181,8 @@ overwritten on the next run. Requires Inkscape and ImageMagick.
 
 ## Authors and copyright
 
-- Copyright (c) 2009–2018 Nicolas Bonnefon
 - Copyright (c) 2026+ Daniel Duris, dusoft@staznosti.sk
+- Copyright (c) 2009–2018 Nicolas Bonnefon
+
+Computer-assisted development was used in the process.
+

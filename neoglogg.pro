@@ -152,7 +152,7 @@ macx {
 else {
     # For Windows icon
     RC_ICONS = neoglogg.ico
-    QMAKE_TARGET_COMPANY = "Nicolas Bonnefon"
+    QMAKE_TARGET_COMPANY = "Daniel Duris"
     QMAKE_TARGET_DESCRIPTION = "neoglogg - the fast, smart log explorer. Updated and upgraded."
 }
 
