@@ -1,7 +1,9 @@
 neoglogg - the fast, smart log explorer. Updated and upgraded.
 =====================================
 
-neoglogg by Daniel Duris, based on glogg by Nicolas Bonnefon, is a multi-platform GUI application that helps browse and search through long and complex log files.  It is designed with programmers and system administrators in mind and can be seen as a graphical, interactive combination of grep and less.
+neoglogg by Daniel Duris, based on glogg, is a multi-platform GUI log viewer.
+
+Browse and search through long and complex log files. Also described as: A graphical, interactive combination of grep and less.
 
 <img width="512" height="512" alt="neoglogg" src="https://github.com/user-attachments/assets/12c419fe-6e20-435f-947e-358daae43581" />
 
@@ -129,13 +131,7 @@ make
 ./neoglogg_tests
 ```
 
-## Authors and copyright
-
-- Copyright (c) 2009–2018 Nicolas Bonnefon
-- Copyright (c) 2026+ Daniel Duris, dusoft@staznosti.sk
-
-Releases
---------
+## Releases
 
 Pushing a version tag builds and publishes every artifact:
 
@@ -182,3 +178,8 @@ That regenerates the hicolor PNGs, the Qt resource glyphs (light and dark, 1x
 and 2x), `neoglogg.ico`, `images/neoglogg.icns` with its iconset, and the macOS
 disk image background. Do not hand-edit the generated files — they are
 overwritten on the next run. Requires Inkscape and ImageMagick.
+
+## Authors and copyright
+
+- Copyright (c) 2009–2018 Nicolas Bonnefon
+- Copyright (c) 2026+ Daniel Duris, dusoft@staznosti.sk
