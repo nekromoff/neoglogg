@@ -55,7 +55,7 @@ jobs:
           || inputs.only == 'all' || inputs.only == 'deb' }}
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -111,7 +111,7 @@ jobs:
       - name: Collect
         run: mkdir -p out && mv ../*.deb out/
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: deb
           path: out/*.deb
@@ -135,7 +135,7 @@ jobs:
             gcc-c++ make qt6-qtbase-devel qt6-qt5compat-devel boost-devel \
             desktop-file-utils libappstream-glib
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -187,7 +187,7 @@ jobs:
           find ~/rpmbuild/RPMS -name '*.rpm' -exec mv {} out/ \;
           ls -l out
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: rpm
           path: out/*.rpm
@@ -206,7 +206,7 @@ jobs:
     # instead of apt.
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -243,7 +243,7 @@ jobs:
       - name: Build the AppImage
         run: VERSION="${{ needs.version.outputs.version }}" ./release-appimage.sh
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: appimage
           path: '*.AppImage'
@@ -259,7 +259,7 @@ jobs:
       run:
         shell: msys2 {0}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -294,7 +294,7 @@ jobs:
         run: |
           makensis -DVERSION="${{ needs.version.outputs.version }}" neoglogg.nsi
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: windows
           path: |
@@ -309,7 +309,7 @@ jobs:
           || inputs.only == 'all' || inputs.only == 'macos' }}
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -341,7 +341,7 @@ jobs:
           mv release/neoglogg.dmg \
              "neoglogg-${{ needs.version.outputs.version }}-macos.dmg"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: macos
           path: '*.dmg'
@@ -357,7 +357,7 @@ jobs:
     # registered on the AUR account). Without it the job is skipped rather
     # than failing the release.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Skip if no AUR key is configured
         id: gate
@@ -431,7 +431,7 @@ jobs:
     needs: [ version, deb, rpm, appimage, windows, macos ]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           path: artifacts
 
