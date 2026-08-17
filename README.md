@@ -56,8 +56,8 @@ theme rather than staying white.
 Linux (DEB, RPM), Windows, Mac OS, AppImage
 
 See Releases: https://github.com/nekromoff/neoglogg/releases/
-
-No AUR packages, but you can compile (because Arch AUR registration website is clearly made by some people-hating bureaucrats).
+/
+No AUR packages, but you can compile (because Arch AUR paackage registration does not work as of 08/2026).
 
 ## Requirements
 
