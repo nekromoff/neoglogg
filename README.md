@@ -5,8 +5,6 @@ neoglogg by Daniel Duris, based on glogg, is a multi-platform GUI log viewer.
 
 Browse and search through long and complex log files. Also described as: A graphical, interactive combination of grep and less.
 
-<img width="512" height="512" alt="neoglogg" src="https://github.com/user-attachments/assets/12c419fe-6e20-435f-947e-358daae43581" />
-
 ## Main features
 
 * Linux, Windows, Mac OS supported (thanks to Qt)
@@ -19,6 +17,10 @@ Browse and search through long and complex log files. Also described as: A graph
 * Follow file mode
 * Line wrapping for long lines
 * Light / dark mode
+
+## Screenshots
+
+<img width="1920" height="1039" alt="screenshot" src="https://github.com/user-attachments/assets/d72c2fae-c55b-40e4-80b4-4ab6406d4f2a" />
 
 ## New in neoglogg
 
